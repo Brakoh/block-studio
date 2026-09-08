@@ -517,6 +517,16 @@
         ::-webkit-scrollbar-track { background: var(--bg); }
         ::-webkit-scrollbar-thumb { background: var(--muted); }
 
+        #anchor-line {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9997;
+        }
+
         /* MOBILE */
         @media (max-width: 768px) {
             nav { padding: 16px 24px; }
@@ -543,6 +553,7 @@
     <span class="corner-coord br">ALTITUDE: 11M<br>OSGB36</span>
 
     <div class="crosshair" id="crosshair"></div>
+    <canvas id="anchor-line"></canvas>
     <div class="crosshair-coord" id="crosshair-coord"></div>
 
     <nav>
@@ -717,6 +728,95 @@
         }
         updateTime();
         setInterval(updateTime, 1000);
+
+        const anchorCanvas = document.getElementById('anchor-line');
+        const anchorCtx = anchorCanvas.getContext('2d');
+        const aDpr = window.devicePixelRatio || 1;
+
+        function sizeAnchorCanvas() {
+            anchorCanvas.width = window.innerWidth * aDpr;
+            anchorCanvas.height = window.innerHeight * aDpr;
+            anchorCanvas.style.width = window.innerWidth + 'px';
+            anchorCanvas.style.height = window.innerHeight + 'px';
+            anchorCtx.setTransform(aDpr, 0, 0, aDpr, 0, 0);
+        }
+        sizeAnchorCanvas();
+        window.addEventListener('resize', sizeAnchorCanvas);
+
+        const interactiveSel = 'a, button, input, select, textarea, [role="link"]';
+        let anchorList = [];
+        function collectInteractive() {
+            anchorList = Array.from(document.querySelectorAll(interactiveSel))
+                .filter((el) => {
+                    const r = el.getBoundingClientRect();
+                    return r.width > 0 && r.height > 0;
+                })
+                .map((el) => ({ el, x: 0, y: 0 }));
+            updateAnchorPositions();
+        }
+        function updateAnchorPositions() {
+            for (const a of anchorList) {
+                const r = a.el.getBoundingClientRect();
+                a.x = r.left + r.width / 2;
+                a.y = r.top + r.height / 2;
+            }
+        }
+        collectInteractive();
+        window.addEventListener('resize', collectInteractive);
+        window.addEventListener('scroll', updateAnchorPositions, { passive: true });
+
+        let cMouseX = window.innerWidth / 2, cMouseY = window.innerHeight / 2;
+        let lineX = cMouseX, lineY = cMouseY;
+        let targetCurrent = null;
+
+        document.addEventListener('mousemove', (e) => {
+            cMouseX = e.clientX;
+            cMouseY = e.clientY;
+        });
+
+        function anchorDraw() {
+            anchorCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+            let best = null;
+            let bestD = Infinity;
+            for (const a of anchorList) {
+                const d = Math.hypot(a.x - cMouseX, a.y - cMouseY);
+                if (d < bestD) {
+                    bestD = d;
+                    best = a;
+                }
+            }
+
+            const MAX_RANGE = Math.max(300, window.innerWidth * 0.45);
+            targetCurrent = best && bestD < MAX_RANGE ? best : null;
+
+            const tgt = targetCurrent;
+            if (tgt) {
+                const targetX = tgt.x;
+                const targetY = tgt.y;
+                const dx = targetX - lineX;
+                const dy = targetY - lineY;
+                const jerk = 0.16;
+                lineX += dx * jerk;
+                lineY += dy * jerk;
+
+                const cx = (lineX + targetX) / 2 + (lineY - targetY) * 0.28;
+                const cy = (lineY + targetY) / 2 - (lineX - targetX) * 0.28;
+
+                anchorCtx.strokeStyle = 'rgba(255,255,255,0.35)';
+                anchorCtx.lineWidth = 1;
+                anchorCtx.beginPath();
+                anchorCtx.moveTo(cMouseX, cMouseY);
+                anchorCtx.quadraticCurveTo(cx, cy, targetX, targetY);
+                anchorCtx.stroke();
+            } else {
+                lineX = cMouseX;
+                lineY = cMouseY;
+            }
+
+            requestAnimationFrame(anchorDraw);
+        }
+        requestAnimationFrame(anchorDraw);
     </script>
 
 </body>
