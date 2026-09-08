@@ -809,6 +809,26 @@
                 anchorCtx.moveTo(cMouseX, cMouseY);
                 anchorCtx.quadraticCurveTo(cx, cy, targetX, targetY);
                 anchorCtx.stroke();
+
+                const r = tgt.el.getBoundingClientRect();
+                const pad = 6;
+                const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 400);
+                const ox = r.left - pad, oy = r.top - pad;
+                const w = r.width + pad * 2, h = r.height + pad * 2;
+
+                anchorCtx.strokeStyle = `rgba(255,255,255,${(0.22 + 0.1 * pulse).toFixed(3)})`;
+                anchorCtx.lineWidth = 1;
+                anchorCtx.strokeRect(ox, oy, w, h);
+
+                const c = 9;
+                anchorCtx.strokeStyle = `rgba(255,255,255,${(0.4 + 0.18 * pulse).toFixed(3)})`;
+                [ [ox, oy, 1, 1], [ox + w, oy, -1, 1], [ox, oy + h, 1, -1], [ox + w, oy + h, -1, -1] ].forEach(([x, y, dx2, dy2]) => {
+                    anchorCtx.beginPath();
+                    anchorCtx.moveTo(x + c * dx2, y);
+                    anchorCtx.lineTo(x, y);
+                    anchorCtx.lineTo(x, y + c * dy2);
+                    anchorCtx.stroke();
+                });
             } else {
                 lineX = cMouseX;
                 lineY = cMouseY;
