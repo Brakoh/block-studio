@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>51°30'N — 0°07'W</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;700&display=swap');
+
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #0a0a0a;
+            --fg: #e8e8e8;
+            --muted: #3a3a3a;
+            --accent: #c4c4c4;
+            --dim: #1a1a1a;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--fg);
+            font-family: 'Inter', sans-serif;
+            font-weight: 300;
+            line-height: 1.6;
+            overflow-x: hidden;
+            cursor: default;
+        }
+
+        /* COORDINATE WATERMARK */
+        .watermark {
+            position: fixed;
+            font-family: 'Space Mono', monospace;
+            font-size: 12vw;
+            font-weight: 700;
+            color: var(--dim);
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 0;
+            user-select: none;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-8deg);
+            opacity: 0.35;
+        }
+
+        /* CORNER COORDS */
+        .corner-coord {
+            position: fixed;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.6rem;
+            color: var(--muted);
+            letter-spacing: 0.15em;
+            z-index: 100;
+            text-transform: uppercase;
+        }
+        .corner-coord.tl { top: 24px; left: 24px; }
+        .corner-coord.tr { top: 24px; right: 24px; text-align: right; }
+        .corner-coord.bl { bottom: 24px; left: 24px; }
+        .corner-coord.br { bottom: 24px; right: 24px; text-align: right; }
+
+        /* NAV */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 48px;
+            mix-blend-mode: difference;
+        }
+
+        .logo {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+        }
+
+        .nav-coord {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.6rem;
+            color: var(--muted);
+            letter-spacing: 0.1em;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.65rem;
+            color: var(--fg);
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            position: relative;
+            transition: opacity 0.3s;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: var(--fg);
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .nav-links a:hover {
+            opacity: 0.6;
+        }
+
+        /* HERO */
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+            padding: 0 48px;
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px 48px;
+            align-items: end;
+        }
+
+        .hero h1 {
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: clamp(3rem, 8vw, 8rem);
+            line-height: 0.9;
+            text-transform: uppercase;
+            letter-spacing: -0.03em;
+        }
+
+        .hero-sub {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.65rem;
+            color: var(--muted);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--muted);
+        }
+
+        .hero-coord {
+            grid-column: 1 / -1;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.55rem;
+            color: var(--muted);
+            letter-spacing: 0.15em;
+            margin-top: 24px;
+        }
+
+        /* SECTION */
+        section {
+            position: relative;
+            z-index: 1;
+            padding: 120px 48px;
+        }
+
+        .section-header {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 48px;
+            margin-bottom: 80px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--dim);
+        }
+
+        .section-label {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.25em;
+            color: var(--muted);
+        }
+
+        .section-number {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.6rem;
+            color: var(--muted);
+            text-align: right;
+        }
+
+        .section-title {
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: clamp(1.8rem, 4vw, 3.5rem);
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
+            line-height: 1;
+        }
+
+        .section-title span {
+            display: block;
+            color: var(--muted);
+        }
+
+        /* ABOUT */
+        .about-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+        }
+
+        .about-text p {
+            font-size: 1.05rem;
+            line-height: 1.8;
+            color: var(--accent);
+            max-width: 50ch;
+        }
+
+        .about-coords {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 32px;
+        }
+
+        .coord-block {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 16px;
+            align-items: baseline;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--dim);
+        }
+
+        .coord-label {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.55rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            min-width: 80px;
+        }
+
+        .coord-value {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        /* PROJECTS */
+        .projects-list {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .project-item {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 32px;
+            align-items: center;
+            padding: 40px 0;
+            border-bottom: 1px solid var(--dim);
+            text-decoration: none;
+            color: var(--fg);
+            transition: opacity 0.3s;
+        }
+
+        .project-item:first-child {
+            border-top: 1px solid var(--dim);
+        }
+
+        .project-item:hover {
+            opacity: 0.5;
+        }
+
+        .project-index {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.6rem;
+            color: var(--muted);
+            letter-spacing: 0.1em;
+            min-width: 32px;
+        }
+
+        .project-info h3 {
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: clamp(1.2rem, 2.5vw, 2rem);
+            text-transform: uppercase;
+            letter-spacing: -0.01em;
+            margin-bottom: 4px;
+        }
+
+        .project-tag {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.55rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+        }
+
+        .project-coord {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.6rem;
+            color: var(--muted);
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        /* DIVIDER */
+        .coord-divider {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 60px 48px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .coord-divider span {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.55rem;
+            color: var(--muted);
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+        }
+
+        .coord-divider::before,
+        .coord-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--dim);
+        }
+
+        .coord-divider::before { margin-right: 32px; }
+        .coord-divider::after { margin-left: 32px; }
+
+        /* CONTACT */
+        .contact-content {
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .contact-content .section-title {
+            margin-bottom: 40px;
+        }
+
+        .contact-email {
+            font-family: 'Space Mono', monospace;
+            font-size: clamp(0.8rem, 2vw, 1.2rem);
+            font-weight: 700;
+            text-decoration: none;
+            color: var(--fg);
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--fg);
+            padding-bottom: 4px;
+            transition: opacity 0.3s;
+        }
+
+        .contact-email:hover {
+            opacity: 0.4;
+        }
+
+        .contact-coords {
+            display: flex;
+            justify-content: center;
+            gap: 48px;
+            margin-top: 64px;
+        }
+
+        .contact-coord-item {
+            text-align: center;
+        }
+
+        .contact-coord-item .label {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.5rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            margin-bottom: 8px;
+        }
+
+        .contact-coord-item .value {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        /* FOOTER */
+        footer {
+            position: relative;
+            z-index: 1;
+            padding: 40px 48px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--dim);
+        }
+
+        footer span {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.55rem;
+            color: var(--muted);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+        }
+
+        /* SIDE COORDINATE STRIP */
+        .side-strip {
+            position: fixed;
+            right: 24px;
+            top: 50%;
+            transform: translateY(-50%) rotate(90deg);
+            transform-origin: center;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.5rem;
+            color: var(--muted);
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            white-space: nowrap;
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0.4;
+        }
+
+        /* CROSSHAIR CURSOR */
+        .crosshair {
+            position: fixed;
+            width: 24px;
+            height: 24px;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        body:hover .crosshair {
+            opacity: 1;
+        }
+
+        .crosshair::before,
+        .crosshair::after {
+            content: '';
+            position: absolute;
+            background: var(--fg);
+        }
+
+        .crosshair::before {
+            width: 1px;
+            height: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .crosshair::after {
+            width: 100%;
+            height: 1px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .crosshair-coord {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Space Mono', monospace;
+            font-size: 0.55rem;
+            color: var(--muted);
+            letter-spacing: 0.15em;
+            z-index: 9999;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        /* SCROLL */
+        ::-webkit-scrollbar { width: 2px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--muted); }
+
+        /* MOBILE */
+        @media (max-width: 768px) {
+            nav { padding: 16px 24px; }
+            .hero { padding: 0 24px; }
+            section { padding: 80px 24px; }
+            .section-header { grid-template-columns: 1fr; gap: 16px; }
+            .about-grid { grid-template-columns: 1fr; gap: 48px; }
+            .project-item { grid-template-columns: 1fr; gap: 8px; }
+            .project-coord { text-align: left; }
+            .corner-coord, .side-strip { display: none; }
+            .contact-coords { flex-direction: column; gap: 24px; }
+            footer { padding: 24px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="watermark">51°30'26.4"N 0°07'39.6"W</div>
+    <div class="side-strip">51.5074° N — 0.1278° W — LONDON — GB</div>
+
+    <span class="corner-coord tl">51°30'26.4"N<br>0°07'39.6"W</span>
+    <span class="corner-coord tr">GRID REF: TQ 3080<br>SECTOR: CENTRAL</span>
+    <span class="corner-coord bl">55.9533° N<br>3.1883° W</span>
+    <span class="corner-coord br">ALTITUDE: 11M<br>OSGB36</span>
+
+    <div class="crosshair" id="crosshair"></div>
+    <div class="crosshair-coord" id="crosshair-coord"></div>
+
+    <nav>
+        <div class="logo">GRID</div>
+        <ul class="nav-links">
+            <li><a href="#about">About</a></li>
+            <li><a href="#work">Work</a></li>
+            <li><a href="#contact">Contact</a></li>
+        </ul>
+        <div class="nav-coord" id="nav-time"></div>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-grid">
+            <h1>GRID<br>STUDIO</h1>
+            <span class="hero-sub">London, United Kingdom</span>
+            <div class="hero-coord">
+                51°30'26.4"N &nbsp; 0°07'39.6"W &nbsp; — &nbsp; Est. 2019 &nbsp; — &nbsp; Design &amp; Digital
+            </div>
+        </div>
+    </section>
+
+    <div class="coord-divider">
+        <span>51.5074° N &nbsp;·&nbsp; 0.1278° W</span>
+    </div>
+
+    <section id="about">
+        <div class="section-header">
+            <div class="section-label">About</div>
+            <div class="section-number">001</div>
+        </div>
+        <div class="about-grid">
+            <div class="about-text">
+                <p>
+                    We are a small design studio based in East London, working at the intersection of identity, space, and digital experience. Our practice is rooted in precision — every decision is deliberate, every detail mapped.
+                </p>
+                <br>
+                <p>
+                    Founded in Shoreditch, operating from a converted warehouse off Brick Lane. We believe in restraint, structure, and the quiet power of well-placed coordinates.
+                </p>
+            </div>
+            <div class="about-coords">
+                <div class="coord-block">
+                    <span class="coord-label">Lat</span>
+                    <span class="coord-value">51.5074° N</span>
+                </div>
+                <div class="coord-block">
+                    <span class="coord-label">Long</span>
+                    <span class="coord-value">0.1278° W</span>
+                </div>
+                <div class="coord-block">
+                    <span class="coord-label">Alt</span>
+                    <span class="coord-value">11 m</span>
+                </div>
+                <div class="coord-block">
+                    <span class="coord-label">Grid</span>
+                    <span class="coord-value">TQ 3380</span>
+                </div>
+                <div class="coord-block">
+                    <span class="coord-label">Timezone</span>
+                    <span class="coord-value">GMT / BST</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="coord-divider">
+        <span>OSGB36 · WGS84 · ETRS89</span>
+    </div>
+
+    <section id="work">
+        <div class="section-header">
+            <div class="section-label">Selected Work</div>
+            <div class="section-number">002</div>
+        </div>
+        <div class="projects-list">
+            <a href="#" class="project-item">
+                <span class="project-index">01</span>
+                <div class="project-info">
+                    <h3>Brutalist Archive</h3>
+                    <span class="project-tag">Identity — Digital</span>
+                </div>
+                <span class="project-coord">51.5400° N, 0.0560° W</span>
+            </a>
+            <a href="#" class="project-item">
+                <span class="project-index">02</span>
+                <div class="project-info">
+                    <h3>Peckham Concrete</h3>
+                    <span class="project-tag">Spatial — Brand</span>
+                </div>
+                <span class="project-coord">51.4694° N, 0.0752° W</span>
+            </a>
+            <a href="#" class="project-item">
+                <span class="project-index">03</span>
+                <div class="project-info">
+                    <h3>Static Signal</h3>
+                    <span class="project-tag">Editorial — Digital</span>
+                </div>
+                <span class="project-coord">51.5230° N, 0.0810° W</span>
+            </a>
+            <a href="#" class="project-item">
+                <span class="project-index">04</span>
+                <div class="project-info">
+                    <h3>Rail Line Atlas</h3>
+                    <span class="project-tag">Mapping — Print</span>
+                </div>
+                <span class="project-coord">51.5500° N, 0.1030° W</span>
+            </a>
+            <a href="#" class="project-item">
+                <span class="project-index">05</span>
+                <div class="project-info">
+                    <h3>Night Grid</h3>
+                    <span class="project-tag">Installation — Digital</span>
+                </div>
+                <span class="project-coord">51.4780° N, 0.0090° W</span>
+            </a>
+        </div>
+    </section>
+
+    <div class="coord-divider">
+        <span>ELEVATION — 11M — ABOVE SEA LEVEL — TIDAL</span>
+    </div>
+
+    <section id="contact">
+        <div class="section-header">
+            <div class="section-label">Contact</div>
+            <div class="section-number">003</div>
+        </div>
+        <div class="contact-content">
+            <h2 class="section-title">Get In<br><span>Touch</span></h2>
+            <a href="mailto:hello@gridstudio.co" class="contact-email">hello@gridstudio.co</a>
+            <div class="contact-coords">
+                <div class="contact-coord-item">
+                    <div class="label">Studio</div>
+                    <div class="value">51°31'12.0"N</div>
+                </div>
+                <div class="contact-coord-item">
+                    <div class="label">London</div>
+                    <div class="value">0°04'30.0"W</div>
+                </div>
+                <div class="contact-coord-item">
+                    <div class="label">United Kingdom</div>
+                    <div class="value">E1 6RF</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <span>&copy; 2026 Grid Studio</span>
+        <span>51.5074° N, 0.1278° W</span>
+    </footer>
+
+    <script>
+        const crosshair = document.getElementById('crosshair');
+        const crosshairCoord = document.getElementById('crosshair-coord');
+
+        document.addEventListener('mousemove', (e) => {
+            crosshair.style.left = e.clientX + 'px';
+            crosshair.style.top = e.clientY + 'px';
+            crosshair.style.transform = 'translate(-50%, -50%)';
+
+            const lat = (51.5 + (e.clientY / window.innerHeight) * 0.02).toFixed(4);
+            const lng = (0.12 + (e.clientX / window.innerWidth) * 0.02).toFixed(4);
+            crosshairCoord.textContent = `${lat}° N, ${lng}° W`;
+        });
+
+        function updateTime() {
+            const now = new Date();
+            const utc = now.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+            document.getElementById('nav-time').textContent = utc;
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+    </script>
+
+</body>
+</html>
