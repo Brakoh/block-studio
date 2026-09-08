@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>51°30'N — 0°07'W</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;700&display=swap');
 
@@ -16,9 +17,9 @@
         :root {
             --bg: #0a0a0a;
             --fg: #e8e8e8;
-            --muted: #3a3a3a;
+            --muted: #4c4c4c;
             --accent: #c4c4c4;
-            --dim: #1a1a1a;
+            --dim: #282828;
         }
 
         html {
@@ -46,7 +47,7 @@
             font-family: 'Space Mono', monospace;
             font-size: 12vw;
             font-weight: 700;
-            color: var(--dim);
+            color: #1a1a1a;
             white-space: nowrap;
             pointer-events: none;
             z-index: 0;
@@ -67,8 +68,8 @@
             z-index: 100;
             text-transform: uppercase;
         }
-        .corner-coord.tl { top: 24px; left: 24px; }
-        .corner-coord.tr { top: 24px; right: 24px; text-align: right; }
+        .corner-coord.tl { top: 72px; left: 24px; }
+        .corner-coord.tr { top: 72px; right: 24px; text-align: right; }
         .corner-coord.bl { bottom: 24px; left: 24px; }
         .corner-coord.br { bottom: 24px; right: 24px; text-align: right; }
 
@@ -163,6 +164,13 @@
             line-height: 0.9;
             text-transform: uppercase;
             letter-spacing: -0.03em;
+            display: inline-block;
+            transition: letter-spacing 0.5s ease, color 0.5s ease;
+        }
+
+        .hero h1:hover {
+            letter-spacing: 0.05em;
+            color: #ffffff;
         }
 
         .square-dot {
@@ -171,6 +179,13 @@
             height: 0.12em;
             margin-left: 0.04em;
             background: currentColor;
+            vertical-align: baseline;
+            transform: translateY(-0.02em);
+            transition: transform 0.5s ease, opacity 0.5s ease;
+        }
+
+        .hero h1:hover .square-dot {
+            transform: translateY(-0.02em) rotate(225deg) scale(1.4);
         }
 
         .hero-sub {
@@ -512,6 +527,42 @@
             white-space: nowrap;
         }
 
+        /* OVERLAY SCREEN */
+        .overlay-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 9000;
+            background: var(--bg);
+            overflow: hidden;
+            display: none;
+        }
+
+        .overlay-screen.open {
+            display: block;
+        }
+
+        .overlay-return {
+            position: fixed;
+            top: 24px;
+            left: 24px;
+            z-index: 9002;
+            background: transparent;
+            border: 1px solid var(--muted);
+            color: var(--fg);
+            font-family: 'Space Mono', monospace;
+            font-size: 0.65rem;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            padding: 18px 36px;
+            cursor: pointer;
+            transition: opacity 0.3s, background 0.3s;
+        }
+
+        .overlay-return:hover {
+            opacity: 0.6;
+            background: rgba(196,196,196,0.04);
+        }
+
         /* SCROLL */
         ::-webkit-scrollbar { width: 2px; }
         ::-webkit-scrollbar-track { background: var(--bg); }
@@ -525,6 +576,17 @@
             height: 100%;
             pointer-events: none;
             z-index: 9997;
+        }
+
+        #face-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9001;
+            display: none;
         }
 
         /* MOBILE */
@@ -707,6 +769,17 @@
         <span>51.5074° N, 0.1278° W</span>
     </footer>
 
+    <div class="overlay-screen" id="overlay-screen">
+        <div class="watermark">51°30'26.4"N 0°07'39.6"W</div>
+        <span class="corner-coord tl">51°30'26.4"N<br>0°07'39.6"W</span>
+        <span class="corner-coord tr">GRID REF: TQ 3080<br>SECTOR: CENTRAL</span>
+        <span class="corner-coord bl">55.9533° N<br>3.1883° W</span>
+        <span class="corner-coord br">ALTITUDE: 11M<br>OSGB36</span>
+        <div class="side-strip">51.5074° N — 0.1278° W — LONDON — GB</div>
+
+        <button class="overlay-return" id="overlay-return">Return</button>
+    </div>
+
     <script>
         const crosshair = document.getElementById('crosshair');
         const crosshairCoord = document.getElementById('crosshair-coord');
@@ -729,6 +802,42 @@
         updateTime();
         setInterval(updateTime, 1000);
 
+        const overlayScreen = document.getElementById('overlay-screen');
+        const overlayReturn = document.getElementById('overlay-return');
+
+        function openOverlay() {
+            overlayScreen.classList.add('open');
+            document.body.style.overflow = 'hidden';
+            const fc = document.getElementById('face-canvas');
+            if (fc) fc.style.display = 'block';
+            collectInteractive();
+            targetCurrent = null;
+            lineX = cMouseX;
+            lineY = cMouseY;
+        }
+
+        function closeOverlay() {
+            overlayScreen.classList.remove('open');
+            document.body.style.overflow = '';
+            const fc = document.getElementById('face-canvas');
+            if (fc) fc.style.display = 'none';
+            collectInteractive();
+            targetCurrent = null;
+            lineX = cMouseX;
+            lineY = cMouseY;
+        }
+
+        document.querySelector('.hero h1').addEventListener('click', openOverlay);
+
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.hero h1')) openOverlay();
+        });
+
+        overlayReturn.addEventListener('click', closeOverlay);
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeOverlay();
+        });
+
         const anchorCanvas = document.getElementById('anchor-line');
         const anchorCtx = anchorCanvas.getContext('2d');
         const aDpr = window.devicePixelRatio || 1;
@@ -743,13 +852,16 @@
         sizeAnchorCanvas();
         window.addEventListener('resize', sizeAnchorCanvas);
 
-        const interactiveSel = 'a, button, input, select, textarea, [role="link"]';
+        const interactiveSel = 'a, button, input, select, textarea, [role="link"], .hero h1';
         let anchorList = [];
         function collectInteractive() {
+            const overlayOpen = overlayScreen.classList.contains('open');
             anchorList = Array.from(document.querySelectorAll(interactiveSel))
                 .filter((el) => {
                     const r = el.getBoundingClientRect();
-                    return r.width > 0 && r.height > 0;
+                    if (!(r.width > 0 && r.height > 0)) return false;
+                    const inOverlay = overlayScreen.contains(el);
+                    return overlayOpen ? inOverlay : !inOverlay;
                 })
                 .map((el) => ({ el, x: 0, y: 0 }));
             updateAnchorPositions();
@@ -803,18 +915,25 @@
                 const cx = (lineX + targetX) / 2 + (lineY - targetY) * 0.28;
                 const cy = (lineY + targetY) / 2 - (lineX - targetX) * 0.28;
 
+                const r = tgt.el.getBoundingClientRect();
+                const pad = 6;
+                const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 400);
+                const ox = r.left - pad, oy = r.top - pad;
+                const w = r.width + pad * 2, h = r.height + pad * 2;
+
+                anchorCtx.save();
+                anchorCtx.beginPath();
+                anchorCtx.rect(0, 0, window.innerWidth, window.innerHeight);
+                anchorCtx.rect(ox, oy, w, h);
+                anchorCtx.clip('evenodd');
+
                 anchorCtx.strokeStyle = 'rgba(255,255,255,0.35)';
                 anchorCtx.lineWidth = 1;
                 anchorCtx.beginPath();
                 anchorCtx.moveTo(cMouseX, cMouseY);
                 anchorCtx.quadraticCurveTo(cx, cy, targetX, targetY);
                 anchorCtx.stroke();
-
-                const r = tgt.el.getBoundingClientRect();
-                const pad = 6;
-                const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 400);
-                const ox = r.left - pad, oy = r.top - pad;
-                const w = r.width + pad * 2, h = r.height + pad * 2;
+                anchorCtx.restore();
 
                 anchorCtx.strokeStyle = `rgba(255,255,255,${(0.22 + 0.1 * pulse).toFixed(3)})`;
                 anchorCtx.lineWidth = 1;
@@ -837,6 +956,133 @@
             requestAnimationFrame(anchorDraw);
         }
         requestAnimationFrame(anchorDraw);
+    </script>
+
+    <script>
+        /* ---- BLOCK. sphere — point cloud 3D (p5.js) ----
+           Parametri grafici regolabili in FACE_PARAMS. */
+        const FACE_PARAMS = {
+            sizeFactor: 0.3,       // frazione di min(width,height) occupata dalla sfera
+            spacing: 0.048,        // distanza tra i punti (più piccolo = più denso)
+            jitter: 0.01,          // irregolarità posizionale dei punti
+            backSpacing: 0.09,     // non usato
+            pointR: 1.2,           // dimensione punti (px)
+            backR: 2.0,            // non usato
+            eyeR: 4.0,             // non usato
+            pupilR: 5.0,           // non usato
+            faceAlpha: 0.55,       // opacità punti
+            backAlpha: 0.3,        // non usato
+            eyeAlpha: 0.85,        // non usato
+            pupilAlpha: 1,         // non usato
+            sway: 0.5,             // ampiezza rotazione verso il cursore
+            follow: 0.055,         // velocità di "inseguimento" (lerp)
+            lineCount: 110,        // numero di linee attive contemporaneamente
+            lineMaxSteps: 10,      // distanza max (in passi) tra due punti collegati
+            lineWeight: 0.7,       // spessore linea (px)
+            lineAlpha: 0.45,       // opacità linee
+            lineLife: 22,          // durata media di una linea (frame)
+        };
+
+        const FP = FACE_PARAMS;
+        const facePts = [];
+        const lines = [];
+
+        function buildFace() {
+            facePts.length = 0;
+
+            const r = 0.9;
+            for (let phi = 0; phi <= Math.PI; phi += FP.spacing) {
+                const r0 = r * Math.sin(phi);
+                const y = r * Math.cos(phi);
+                const steps = Math.max(8, Math.round((2 * Math.PI * r0) / FP.spacing));
+                for (let i = 0; i < steps; i++) {
+                    const theta = (i / steps) * 2 * Math.PI;
+                    const jx = (Math.random() - 0.5) * FP.jitter;
+                    const jy = (Math.random() - 0.5) * FP.jitter;
+                    const jz = (Math.random() - 0.5) * FP.jitter;
+                    facePts.push({
+                        x: r0 * Math.cos(theta) + jx,
+                        y: y + jy,
+                        z: r0 * Math.sin(theta) + jz,
+                    });
+                }
+            }
+        }
+
+        let rotY = 0, rotX = 0;
+
+        function distSq(a, b) {
+            const dx = a.x - b.x, dy = a.y - b.y, dz = a.z - b.z;
+            return dx * dx + dy * dy + dz * dz;
+        }
+
+        function spawnLine() {
+            const maxD = (FP.spacing * FP.lineMaxSteps) ** 2;
+            const a = facePts[(Math.random() * facePts.length) | 0];
+            let b = null;
+            for (let attempt = 0; attempt < 40; attempt++) {
+                const cand = facePts[(Math.random() * facePts.length) | 0];
+                if (cand !== a && distSq(a, cand) <= maxD) { b = cand; break; }
+            }
+            if (!b) return;
+            lines.push({
+                a, b,
+                life: FP.lineLife * (0.6 + Math.random() * 0.8),
+                age: 0,
+            });
+        }
+
+        function setup() {
+            const c = createCanvas(windowWidth, windowHeight, WEBGL);
+            c.id('face-canvas');
+            buildFace();
+            noStroke();
+            for (let i = 0; i < FP.lineCount; i++) spawnLine();
+        }
+
+        function draw() {
+            clear();
+
+            const nx = (mouseX / width - 0.5) * 2;
+            const ny = (mouseY / height - 0.5) * 2;
+
+            const targetRotY = nx * FP.sway;
+            const targetRotX = -ny * FP.sway * 0.6;
+            rotY += (targetRotY - rotY) * FP.follow;
+            rotX += (targetRotX - rotX) * FP.follow;
+
+            const s = Math.min(width, height) * FP.sizeFactor * 2;
+            push();
+            rotateY(rotY);
+            rotateX(rotX + 0.12);
+
+            for (let i = lines.length - 1; i >= 0; i--) {
+                const l = lines[i];
+                l.age++;
+                if (l.age > l.life) {
+                    lines.splice(i, 1);
+                    spawnLine();
+                    continue;
+                }
+                const t = 1 - l.age / l.life;
+                strokeWeight(FP.lineWeight);
+                stroke(235, 235, 235, FP.lineAlpha * 255 * t);
+                line(l.a.x * s, l.a.y * s, l.a.z * s,
+                     l.b.x * s, l.b.y * s, l.b.z * s);
+            }
+
+            strokeWeight(FP.pointR * 2);
+            stroke(235, 235, 235, FP.faceAlpha * 255);
+            for (const p of facePts) {
+                point(p.x * s, p.y * s, p.z * s);
+            }
+
+            pop();
+        }
+
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);
+        }
     </script>
 
 </body>
