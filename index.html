@@ -527,8 +527,8 @@
             white-space: nowrap;
         }
 
-        /* OVERLAY SCREEN */
-        .overlay-screen {
+        /* GLOBE SCREEN */
+        .globe-screen {
             position: fixed;
             inset: 0;
             z-index: 9000;
@@ -537,11 +537,11 @@
             display: none;
         }
 
-        .overlay-screen.open {
+        .globe-screen.open {
             display: block;
         }
 
-        .overlay-return {
+        .globe-return {
             position: fixed;
             top: 24px;
             left: 24px;
@@ -558,12 +558,81 @@
             transition: opacity 0.3s, background 0.3s;
         }
 
-        .overlay-return:hover {
+        .globe-return:hover {
             opacity: 0.6;
             background: rgba(196,196,196,0.04);
         }
 
+        .globe-tag {
+            position: fixed;
+            transform: translate(-50%, -50%);
+            z-index: 9007;
+            background: #000;
+            border: 1px solid #fff;
+            color: #fff;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.7rem;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            padding: 12px 24px;
+            cursor: pointer;
+            white-space: nowrap;
+            pointer-events: auto;
+            display: none;
+            overflow: hidden;
+            transition: color 0.55s cubic-bezier(0.55, 0, 0.25, 1);
+        }
+
+        .globe-tag > span {
+            position: relative;
+            z-index: 1;
+        }
+
+        .globe-tag::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: #fff;
+            transform: translateY(100%);
+            transition: transform 0.6s cubic-bezier(0.55, 0, 0.25, 1),
+                        clip-path 0.6s cubic-bezier(0.55, 0, 0.25, 1);
+            clip-path: polygon(
+                0% 110%, 8% 108%, 16% 105%, 24% 104%, 33% 106%, 41% 112%, 50% 120%,
+                58% 112%, 66% 106%, 75% 104%, 83% 105%, 91% 108%, 100% 110%,
+                100% 100%, 0% 100%
+            );
+        }
+
+        .globe-tag:hover {
+            color: #000;
+        }
+
+        .globe-tag:hover::after {
+            transform: translateY(0);
+            clip-path: polygon(
+                0% -11%, 8% -6%, 16% -2%, 24% 0%, 33% -3%, 41% -8%, 50% -12%,
+                58% -8%, 66% -3%, 75% 0%, 83% -2%, 91% -6%, 100% -11%,
+                100% 100%, 0% 100%
+            );
+        }
+
         /* SCROLL */
+
+        .coord-globe {
+            position: fixed;
+            transform: translate(-50%, -50%);
+            z-index: 9005;
+            background: #000;
+            border: 1px solid var(--muted);
+            color: #fff;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.55rem;
+            letter-spacing: 0.12em;
+            padding: 2px 6px;
+            pointer-events: none;
+            white-space: nowrap;
+            display: none;
+        }
         ::-webkit-scrollbar { width: 2px; }
         ::-webkit-scrollbar-track { background: var(--bg); }
         ::-webkit-scrollbar-thumb { background: var(--muted); }
@@ -769,7 +838,7 @@
         <span>51.5074° N, 0.1278° W</span>
     </footer>
 
-    <div class="overlay-screen" id="overlay-screen">
+    <div class="globe-screen" id="globe-screen">
         <div class="watermark">51°30'26.4"N 0°07'39.6"W</div>
         <span class="corner-coord tl">51°30'26.4"N<br>0°07'39.6"W</span>
         <span class="corner-coord tr">GRID REF: TQ 3080<br>SECTOR: CENTRAL</span>
@@ -777,12 +846,19 @@
         <span class="corner-coord br">ALTITUDE: 11M<br>OSGB36</span>
         <div class="side-strip">51.5074° N — 0.1278° W — LONDON — GB</div>
 
-        <button class="overlay-return" id="overlay-return">Return</button>
+        <button class="globe-return" id="globe-return">Return</button>
+
+        <button class="globe-tag" id="globe-tag"><span>MEME</span></button>
     </div>
 
     <script>
         const crosshair = document.getElementById('crosshair');
         const crosshairCoord = document.getElementById('crosshair-coord');
+
+        if ('scrollRestoration' in history) {
+            history.scrollRestoration = 'manual';
+        }
+        window.scrollTo(0, 0);
 
         document.addEventListener('mousemove', (e) => {
             crosshair.style.left = e.clientX + 'px';
@@ -802,22 +878,23 @@
         updateTime();
         setInterval(updateTime, 1000);
 
-        const overlayScreen = document.getElementById('overlay-screen');
-        const overlayReturn = document.getElementById('overlay-return');
+        const globeScreen = document.getElementById('globe-screen');
+        const globeReturn = document.getElementById('globe-return');
 
-        function openOverlay() {
-            overlayScreen.classList.add('open');
+        function openGlobe() {
+            globeScreen.classList.add('open');
             document.body.style.overflow = 'hidden';
             const fc = document.getElementById('face-canvas');
             if (fc) fc.style.display = 'block';
+            if (typeof window.resetGlobe === 'function') window.resetGlobe();
             collectInteractive();
             targetCurrent = null;
             lineX = cMouseX;
             lineY = cMouseY;
         }
 
-        function closeOverlay() {
-            overlayScreen.classList.remove('open');
+        function closeGlobe() {
+            globeScreen.classList.remove('open');
             document.body.style.overflow = '';
             const fc = document.getElementById('face-canvas');
             if (fc) fc.style.display = 'none';
@@ -827,15 +904,15 @@
             lineY = cMouseY;
         }
 
-        document.querySelector('.hero h1').addEventListener('click', openOverlay);
+        document.querySelector('.hero h1').addEventListener('click', openGlobe);
 
         document.addEventListener('click', (e) => {
-            if (e.target.closest('.hero h1')) openOverlay();
+            if (e.target.closest('.hero h1')) openGlobe();
         });
 
-        overlayReturn.addEventListener('click', closeOverlay);
+        globeReturn.addEventListener('click', closeGlobe);
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeOverlay();
+            if (e.key === 'Escape') closeGlobe();
         });
 
         const anchorCanvas = document.getElementById('anchor-line');
@@ -855,13 +932,13 @@
         const interactiveSel = 'a, button, input, select, textarea, [role="link"], .hero h1';
         let anchorList = [];
         function collectInteractive() {
-            const overlayOpen = overlayScreen.classList.contains('open');
+            const globeOpen = globeScreen.classList.contains('open');
             anchorList = Array.from(document.querySelectorAll(interactiveSel))
                 .filter((el) => {
                     const r = el.getBoundingClientRect();
                     if (!(r.width > 0 && r.height > 0)) return false;
-                    const inOverlay = overlayScreen.contains(el);
-                    return overlayOpen ? inOverlay : !inOverlay;
+                    const inGlobe = globeScreen.contains(el);
+                    return globeOpen ? inGlobe : !inGlobe;
                 })
                 .map((el) => ({ el, x: 0, y: 0 }));
             updateAnchorPositions();
@@ -974,8 +1051,8 @@
             backAlpha: 0.3,        // non usato
             eyeAlpha: 0.85,        // non usato
             pupilAlpha: 1,         // non usato
-            sway: 0.5,             // ampiezza rotazione verso il cursore
-            follow: 0.055,         // velocità di "inseguimento" (lerp)
+            sway: 0.18,             // ampiezza rotazione verso il cursore
+            follow: 0.04,            // velocità di "inseguimento" del cursore
             lineCount: 110,        // numero di linee attive contemporaneamente
             lineMaxSteps: 10,      // distanza max (in passi) tra due punti collegati
             lineWeight: 0.7,       // spessore linea (px)
@@ -986,6 +1063,8 @@
         const FP = FACE_PARAMS;
         const facePts = [];
         const lines = [];
+        const tagEl = document.getElementById('globe-tag');
+        const tagAnchor = { x: 0, y: 0, z: 0.35 };
 
         function buildFace() {
             facePts.length = 0;
@@ -1032,12 +1111,70 @@
             });
         }
 
+        function pickTagAnchor() {
+            const idx = 3 * 12 + 3;
+            const picked = labelList[idx];
+            if (picked) {
+                const R = 0.92;
+                const len = Math.hypot(picked.x, picked.y, picked.z) || 1;
+                tagAnchor.x = (picked.x / len) * R;
+                tagAnchor.y = (picked.y / len) * R;
+                tagAnchor.z = (picked.z / len) * R;
+            }
+        }
+
+        function resetLines() {
+            lines.length = 0;
+            for (let i = 0; i < FP.lineCount; i++) spawnLine();
+        }
+
+        window.resetGlobe = function () {
+            rotY = 0;
+            rotX = 0;
+            resetLines();
+            pickTagAnchor();
+        };
+
         function setup() {
             const c = createCanvas(windowWidth, windowHeight, WEBGL);
             c.id('face-canvas');
             buildFace();
             noStroke();
-            for (let i = 0; i < FP.lineCount; i++) spawnLine();
+            resetLines();
+            pickTagAnchor();
+
+            buildLabels();
+            const globeEl = document.getElementById('globe-screen');
+            labelEls.length = 0;
+            for (const L of labelList) {
+                const d = document.createElement('div');
+                d.className = 'coord-globe';
+                d.textContent = L.label;
+                globeEl.appendChild(d);
+                labelEls.push({ el: d, p: L });
+            }
+        }
+
+        const labelList = [];
+        const labelEls = [];
+        function buildLabels() {
+            labelList.length = 0;
+            const rings = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+            const cols = 12;
+            for (let i = 0; i < rings.length; i++) {
+                const phi = Math.PI * (i + 0.5) / rings.length;
+                const r0 = 0.9 * Math.sin(phi);
+                const yy = 0.9 * Math.cos(phi);
+                for (let j = 0; j < cols; j++) {
+                    const theta = 2 * Math.PI * (j + 0.5) / cols;
+                    labelList.push({
+                        x: r0 * Math.cos(theta),
+                        y: yy,
+                        z: r0 * Math.sin(theta),
+                        label: rings[i] + (j + 1),
+                    });
+                }
+            }
         }
 
         function draw() {
@@ -1078,6 +1215,57 @@
             }
 
             pop();
+
+            let px = tagAnchor.x * s, py = tagAnchor.y * s, pz = tagAnchor.z * s;
+
+            const aY = rotY;
+            const px1 = px * Math.cos(aY) + pz * Math.sin(aY);
+            const pz1 = -px * Math.sin(aY) + pz * Math.cos(aY);
+            const py1 = py;
+
+            const aX = rotX + 0.12;
+            const py2 = py1 * Math.cos(aX) - pz1 * Math.sin(aX);
+            const pz2 = py1 * Math.sin(aX) + pz1 * Math.cos(aX);
+            const px2 = px1;
+
+            const f = (height / 2) / Math.tan(Math.PI / 6);
+            if (pz2 >= f) {
+                tagEl.style.display = 'none';
+            } else {
+                let left = width / 2 + (px2 * f) / (f - pz2);
+                let top = height / 2 + (py2 * f) / (f - pz2);
+                tagEl.style.display = 'block';
+                tagEl.style.left = left + 'px';
+                tagEl.style.top = top + 'px';
+            }
+            const globeOpen = document.getElementById('globe-screen').classList.contains('open');
+
+            for (let i = 0; i < labelEls.length; i++) {
+                const L = labelEls[i];
+                const lx = L.p.x * s;
+                const ly = L.p.y * s;
+                const lz = L.p.z * s;
+
+                const lx1 = lx * Math.cos(aY) + lz * Math.sin(aY);
+                const lz1 = -lx * Math.sin(aY) + lz * Math.cos(aY);
+                const ly1 = ly;
+
+                const ly2 = ly1 * Math.cos(aX) - lz1 * Math.sin(aX);
+                const lz2 = ly1 * Math.sin(aX) + lz1 * Math.cos(aX);
+                const lx2 = lx1;
+
+                if (!globeOpen || lz2 >= f) {
+                    L.el.style.display = 'none';
+                } else {
+                    let left = width / 2 + (lx2 * f) / (f - lz2);
+                    let top = height / 2 + (ly2 * f) / (f - lz2);
+                    L.el.style.display = 'block';
+                    L.el.style.left = left + 'px';
+                    L.el.style.top = top + 'px';
+                }
+            }
+
+            if (!globeOpen) tagEl.style.display = 'none';
         }
 
         function windowResized() {
