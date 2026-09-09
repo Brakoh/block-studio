@@ -1079,11 +1079,14 @@
             pupilAlpha: 1,         // non usato
             sway: 0.18,             // ampiezza rotazione verso il cursore
             follow: 0.04,            // velocità di "inseguimento" del cursore
-            lineCount: 110,        // numero di linee attive contemporaneamente
+            lineCount: 650,        // numero di linee attive contemporaneamente
             lineMaxSteps: 10,      // distanza max (in passi) tra due punti collegati
             lineWeight: 0.7,       // spessore linea (px)
             lineAlpha: 0.45,       // opacità linee
             lineLife: 22,          // durata media di una linea (frame)
+            pulseAmp: 0.04,        // ampiezza radiale (frazione del raggio)
+            pulseScale: 2.0,       // scala spaziale del rumore (bolle larghe)
+            pulseSpeed: 0.004,     // avanzamento tempo rumore per frame
         };
 
         const FP = FACE_PARAMS;
@@ -1115,14 +1118,32 @@
         }
 
         let rotY = 0, rotX = 0;
+        let pulseT = 0;
+
+        function displacedPos(x, y, z) {
+            const sc = FP.pulseScale;
+            const n = noise(x * sc, y * sc, z * sc + pulseT) * 2 - 1;
+            const f = 1 + FP.pulseAmp * n;
+            return { x: x * f, y: y * f, z: z * f };
+        }
+
+        function applyPulse() {
+            pulseT += FP.pulseSpeed;
+            for (const p of facePts) {
+                const d = displacedPos(p.x, p.y, p.z);
+                p.px = d.x;
+                p.py = d.y;
+                p.pz = d.z;
+            }
+        }
 
         function distSq(a, b) {
             const dx = a.x - b.x, dy = a.y - b.y, dz = a.z - b.z;
             return dx * dx + dy * dy + dz * dz;
         }
 
-        function spawnLine() {
-            const maxD = (FP.spacing * FP.lineMaxSteps) ** 2;
+        function spawnLine(existing) {
+            const maxD = (FP.spacing * (2 + Math.random() * 5)) ** 2;
             const a = facePts[(Math.random() * facePts.length) | 0];
             let b = null;
             for (let attempt = 0; attempt < 40; attempt++) {
@@ -1130,11 +1151,26 @@
                 if (cand !== a && distSq(a, cand) <= maxD) { b = cand; break; }
             }
             if (!b) return;
-            lines.push({
-                a, b,
-                life: FP.lineLife * (0.6 + Math.random() * 0.8),
-                age: 0,
-            });
+            const life = 40 + Math.random() * 60;
+            if (existing) {
+                existing.a = a; existing.b = b; existing.age = 0;
+                existing.life = life; existing.maxSteps = maxD;
+                existing.breathPhase = Math.random() * Math.PI * 2;
+                existing.breathSpeed = 0.02 + Math.random() * 0.04;
+                existing.fadeIn = 0.12 + Math.random() * 0.10;
+                existing.fadeOut = 0.70 + Math.random() * 0.15;
+            } else {
+                lines.push({
+                    a, b,
+                    life: life,
+                    age: 0,
+                    maxSteps: maxD,
+                    breathPhase: Math.random() * Math.PI * 2,
+                    breathSpeed: 0.02 + Math.random() * 0.04,
+                    fadeIn: 0.12 + Math.random() * 0.10,
+                    fadeOut: 0.70 + Math.random() * 0.15,
+                });
+            }
         }
 
         function pickTagAnchor() {
@@ -1215,29 +1251,63 @@
             rotX += (targetRotX - rotX) * FP.follow;
 
             const s = Math.min(width, height) * FP.sizeFactor * 2;
+            applyPulse();
             push();
             rotateY(rotY);
             rotateX(rotX + 0.12);
 
-            for (let i = lines.length - 1; i >= 0; i--) {
+            for (let i = 0; i < lines.length; i++) {
                 const l = lines[i];
                 l.age++;
+
                 if (l.age > l.life) {
-                    lines.splice(i, 1);
-                    spawnLine();
-                    continue;
+                    spawnLine(l);
                 }
-                const t = 1 - l.age / l.life;
-                strokeWeight(FP.lineWeight);
-                stroke(235, 235, 235, FP.lineAlpha * 255 * t);
-                line(l.a.x * s, l.a.y * s, l.a.z * s,
-                     l.b.x * s, l.b.y * s, l.b.z * s);
+
+                const r = l.age / l.life;
+
+                l.breathPhase += l.breathSpeed;
+                const breath = 0.7 + 0.3 * Math.sin(l.breathPhase);
+                const travel = (l.age / l.life) * 2;
+                const tail = 0.55;
+
+                const ax = l.a.px * s, ay = l.a.py * s, az = l.a.pz * s;
+                const bx = l.b.px * s, by = l.b.py * s, bz = l.b.pz * s;
+                const mx = (ax + bx) * 0.5, my = (ay + by) * 0.5, mz = (az + bz) * 0.5;
+                const lenM = Math.hypot(mx, my, mz) || 1;
+                const distAB = Math.hypot(ax - bx, ay - by, az - bz);
+                const bulge = distAB * 0.18;
+                const cx = mx + (mx / lenM) * bulge;
+                const cy = my + (my / lenM) * bulge;
+                const cz = mz + (mz / lenM) * bulge;
+
+                const steps = 14;
+                for (let k = 0; k < steps; k++) {
+                    const p = (k + 0.5) / steps;
+                    const d = travel - p;
+                    if (d < 0 || d > tail) continue;
+                    const segAlpha = 1 - (d / tail);
+
+                    const t0 = k / steps;
+                    const t1 = (k + 1) / steps;
+                    const u0 = 1 - t0, u1 = 1 - t1;
+                    const x0 = u0 * u0 * ax + 2 * u0 * t0 * cx + t0 * t0 * bx;
+                    const y0 = u0 * u0 * ay + 2 * u0 * t0 * cy + t0 * t0 * by;
+                    const z0 = u0 * u0 * az + 2 * u0 * t0 * cz + t0 * t0 * bz;
+                    const x1 = u1 * u1 * ax + 2 * u1 * t1 * cx + t1 * t1 * bx;
+                    const y1 = u1 * u1 * ay + 2 * u1 * t1 * cy + t1 * t1 * by;
+                    const z1 = u1 * u1 * az + 2 * u1 * t1 * cz + t1 * t1 * bz;
+
+                    strokeWeight(FP.lineWeight * breath * segAlpha);
+                    stroke(235, 235, 235, FP.lineAlpha * 255 * segAlpha);
+                    line(x0, y0, z0, x1, y1, z1);
+                }
             }
 
             strokeWeight(FP.pointR * 2);
             stroke(235, 235, 235, FP.faceAlpha * 255);
             for (const p of facePts) {
-                point(p.x * s, p.y * s, p.z * s);
+                point(p.px * s, p.py * s, p.pz * s);
             }
 
             pop();
