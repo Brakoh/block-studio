@@ -1312,7 +1312,8 @@
 
             pop();
 
-            let px = tagAnchor.x * s, py = tagAnchor.y * s, pz = tagAnchor.z * s;
+            const tagD = displacedPos(tagAnchor.x, tagAnchor.y, tagAnchor.z);
+            let px = tagD.x * s, py = tagD.y * s, pz = tagD.z * s;
 
             const aY = rotY;
             const px1 = px * Math.cos(aY) + pz * Math.sin(aY);
@@ -1338,9 +1339,10 @@
 
             for (let i = 0; i < labelEls.length; i++) {
                 const L = labelEls[i];
-                const lx = L.p.x * s;
-                const ly = L.p.y * s;
-                const lz = L.p.z * s;
+                const labD = displacedPos(L.p.x, L.p.y, L.p.z);
+                const lx = labD.x * s;
+                const ly = labD.y * s;
+                const lz = labD.z * s;
 
                 const lx1 = lx * Math.cos(aY) + lz * Math.sin(aY);
                 const lz1 = -lx * Math.sin(aY) + lz * Math.cos(aY);
