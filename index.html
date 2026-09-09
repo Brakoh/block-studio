@@ -34,11 +34,11 @@
             font-weight: 300;
             line-height: 1.6;
             overflow-x: hidden;
-            cursor: none;
+            cursor: none !important;
         }
 
-        a, button, [role="link"], input, textarea, select, label {
-            cursor: none;
+        a, button, [role="link"], input, textarea, select, label, h1, h2, h3, h4, h5, h6, span, div, p, li {
+            cursor: none !important;
         }
 
         /* COORDINATE WATERMARK */
@@ -485,7 +485,13 @@
             pointer-events: none;
             z-index: 9999;
             opacity: 0;
-            transition: opacity 0.2s;
+            transition: opacity 0.2s, transform 0.22s cubic-bezier(0.45, 0, 0.55, 1);
+            mix-blend-mode: difference;
+            transform: translate(-50%, -50%);
+        }
+
+        .crosshair.active {
+            transform: translate(-50%, -50%) rotate(180deg);
         }
 
         body:hover .crosshair {
@@ -554,7 +560,6 @@
             letter-spacing: 0.25em;
             text-transform: uppercase;
             padding: 18px 36px;
-            cursor: pointer;
             transition: opacity 0.3s, background 0.3s;
         }
 
@@ -575,7 +580,6 @@
             letter-spacing: 0.25em;
             text-transform: uppercase;
             padding: 12px 24px;
-            cursor: pointer;
             white-space: nowrap;
             pointer-events: auto;
             display: none;
@@ -858,12 +862,28 @@
         if ('scrollRestoration' in history) {
             history.scrollRestoration = 'manual';
         }
+        if (location.hash) {
+            history.replaceState(null, '', location.pathname + location.search);
+        }
         window.scrollTo(0, 0);
+
+        function blockAutoScroll() {
+            window.scrollTo(0, 0);
+        }
+        window.addEventListener('scroll', blockAutoScroll, { passive: true });
+        window.addEventListener('load', () => {
+            window.scrollTo(0, 0);
+            setTimeout(() => window.scrollTo(0, 0), 0);
+            setTimeout(() => window.scrollTo(0, 0), 50);
+            setTimeout(() => window.scrollTo(0, 0), 100);
+        });
+        setTimeout(() => {
+            window.removeEventListener('scroll', blockAutoScroll, { passive: true });
+        }, 300);
 
         document.addEventListener('mousemove', (e) => {
             crosshair.style.left = e.clientX + 'px';
             crosshair.style.top = e.clientY + 'px';
-            crosshair.style.transform = 'translate(-50%, -50%)';
 
             const lat = (51.5 + (e.clientY / window.innerHeight) * 0.02).toFixed(4);
             const lng = (0.12 + (e.clientX / window.innerWidth) * 0.02).toFixed(4);
@@ -978,6 +998,12 @@
 
             const MAX_RANGE = Math.max(300, window.innerWidth * 0.45);
             targetCurrent = best && bestD < MAX_RANGE ? best : null;
+
+            const hovering = targetCurrent && (() => {
+                const r = targetCurrent.el.getBoundingClientRect();
+                return cMouseX >= r.left && cMouseX <= r.right && cMouseY >= r.top && cMouseY <= r.bottom;
+            })();
+            crosshair.classList.toggle('active', !!hovering);
 
             const tgt = targetCurrent;
             if (tgt) {
