@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>51°30'N — 0°07'W</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;700&display=swap');
+
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #0a0a0a;
+            --fg: #e8e8e8;
+            --muted: #4c4c4c;
+            --accent: #c4c4c4;
+            --dim: #282828;
+        }
+
+        html {
+            font-size: 16px;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--fg);
+            font-family: 'Inter', sans-serif;
+            font-weight: 300;
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow: hidden;
+            cursor: none !important;
+        }
+
+        a, button, [role="link"], input, textarea, select, label, h1, h2, h3, h4, h5, h6, span, div, p, li {
+            cursor: none !important;
+        }
+
+        .watermark {
+            position: fixed;
+            font-family: 'Space Mono', monospace;
+            font-size: 12vw;
+            font-weight: 700;
+            color: #1a1a1a;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 0;
+            user-select: none;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-8deg);
+            opacity: 0.35;
+        }
+
+        .corner-coord {
+            position: fixed;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.6rem;
+            color: var(--muted);
+            letter-spacing: 0.15em;
+            z-index: 100;
+            text-transform: uppercase;
+        }
+        .corner-coord.tl { top: 72px; left: 24px; }
+        .corner-coord.tr { top: 72px; right: 24px; text-align: right; }
+        .corner-coord.bl { bottom: 24px; left: 24px; }
+        .corner-coord.br { bottom: 24px; right: 24px; text-align: right; }
+
+        .side-strip {
+            position: fixed;
+            right: 24px;
+            top: 50%;
+            transform: translateY(-50%) rotate(90deg);
+            transform-origin: center;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.5rem;
+            color: var(--muted);
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            white-space: nowrap;
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0.4;
+        }
+
+        .crosshair {
+            position: fixed;
+            width: 24px;
+            height: 24px;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.2s, transform 0.22s cubic-bezier(0.45, 0, 0.55, 1);
+            mix-blend-mode: difference;
+            transform: translate(-50%, -50%);
+        }
+
+        .crosshair.active {
+            transform: translate(-50%, -50%) rotate(180deg);
+        }
+
+        body:hover .crosshair {
+            opacity: 1;
+        }
+
+        .crosshair::before,
+        .crosshair::after {
+            content: '';
+            position: absolute;
+            background: var(--fg);
+        }
+
+        .crosshair::before {
+            width: 1px;
+            height: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .crosshair::after {
+            width: 100%;
+            height: 1px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .crosshair-coord {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Space Mono', monospace;
+            font-size: 0.55rem;
+            color: var(--muted);
+            letter-spacing: 0.15em;
+            z-index: 9999;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .globe-return {
+            position: fixed;
+            top: 24px;
+            left: 24px;
+            z-index: 9002;
+            background: transparent;
+            border: 1px solid var(--muted);
+            color: var(--fg);
+            font-family: 'Space Mono', monospace;
+            font-size: 0.65rem;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            padding: 18px 36px;
+            transition: opacity 0.3s, background 0.3s;
+        }
+
+        .globe-return:hover {
+            opacity: 0.6;
+            background: rgba(196,196,196,0.04);
+        }
+
+        .globe-tag {
+            position: fixed;
+            transform: translate(-50%, -50%);
+            z-index: 9007;
+            background: #000;
+            border: 1px solid #fff;
+            color: #fff;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.7rem;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            padding: 12px 24px;
+            white-space: nowrap;
+            pointer-events: auto;
+            display: none;
+            overflow: hidden;
+            transition: color 0.55s cubic-bezier(0.55, 0, 0.25, 1);
+        }
+
+        .globe-tag > span {
+            position: relative;
+            z-index: 1;
+        }
+
+        .globe-tag::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: #fff;
+            transform: translateY(100%);
+            transition: transform 0.6s cubic-bezier(0.55, 0, 0.25, 1),
+                        clip-path 0.6s cubic-bezier(0.55, 0, 0.25, 1);
+            clip-path: polygon(
+                0% 110%, 8% 108%, 16% 105%, 24% 104%, 33% 106%, 41% 112%, 50% 120%,
+                58% 112%, 66% 106%, 75% 104%, 83% 105%, 91% 108%, 100% 110%,
+                100% 100%, 0% 100%
+            );
+        }
+
+        .globe-tag:hover {
+            color: #000;
+        }
+
+        .globe-tag:hover::after {
+            transform: translateY(0);
+            clip-path: polygon(
+                0% -11%, 8% -6%, 16% -2%, 24% 0%, 33% -3%, 41% -8%, 50% -12%,
+                58% -8%, 66% -3%, 75% 0%, 83% -2%, 91% -6%, 100% -11%,
+                100% 100%, 0% 100%
+            );
+        }
+
+        .coord-globe {
+            position: fixed;
+            transform: translate(-50%, -50%);
+            z-index: 9005;
+            background: #000;
+            border: 1px solid var(--muted);
+            color: #fff;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.55rem;
+            letter-spacing: 0.12em;
+            padding: 2px 6px;
+            pointer-events: none;
+            white-space: nowrap;
+            display: none;
+        }
+
+        #anchor-line {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9997;
+        }
+
+        #face-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9001;
+        }
+
+        @media (max-width: 768px) {
+            .corner-coord, .side-strip { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="watermark">51°30'26.4"N 0°07'39.6"W</div>
+    <div class="side-strip">51.5074° N — 0.1278° W — LONDON — GB</div>
+
+    <span class="corner-coord tl">51°30'26.4"N<br>0°07'39.6"W</span>
+    <span class="corner-coord tr">GRID REF: TQ 3080<br>SECTOR: CENTRAL</span>
+    <span class="corner-coord bl">55.9533° N<br>3.1883° W</span>
+    <span class="corner-coord br">ALTITUDE: 11M<br>OSGB36</span>
+
+    <div class="crosshair" id="crosshair"></div>
+    <canvas id="anchor-line"></canvas>
+    <div class="crosshair-coord" id="crosshair-coord"></div>
+
+    <button class="globe-return" id="globe-return">Return</button>
+    <button class="globe-tag" id="globe-tag"><span>MEME</span></button>
+
+    <script>
+        const crosshair = document.getElementById('crosshair');
+        const crosshairCoord = document.getElementById('crosshair-coord');
+
+        document.addEventListener('mousemove', (e) => {
+            crosshair.style.left = e.clientX + 'px';
+            crosshair.style.top = e.clientY + 'px';
+
+            const lat = (51.5 + (e.clientY / window.innerHeight) * 0.02).toFixed(4);
+            const lng = (0.12 + (e.clientX / window.innerWidth) * 0.02).toFixed(4);
+            crosshairCoord.textContent = `${lat}° N, ${lng}° W`;
+        });
+
+        function goHome() {
+            location.href = 'index.html';
+        }
+        document.getElementById('globe-return').addEventListener('click', goHome);
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') goHome();
+        });
+
+        const anchorCanvas = document.getElementById('anchor-line');
+        const anchorCtx = anchorCanvas.getContext('2d');
+        const aDpr = window.devicePixelRatio || 1;
+
+        function sizeAnchorCanvas() {
+            anchorCanvas.width = window.innerWidth * aDpr;
+            anchorCanvas.height = window.innerHeight * aDpr;
+            anchorCanvas.style.width = window.innerWidth + 'px';
+            anchorCanvas.style.height = window.innerHeight + 'px';
+            anchorCtx.setTransform(aDpr, 0, 0, aDpr, 0, 0);
+        }
+        sizeAnchorCanvas();
+        window.addEventListener('resize', sizeAnchorCanvas);
+
+        const interactiveSel = 'a, button, input, select, textarea, [role="link"], .hero h1';
+        let anchorList = [];
+        function collectInteractive() {
+            anchorList = Array.from(document.querySelectorAll(interactiveSel))
+                .filter((el) => {
+                    const r = el.getBoundingClientRect();
+                    return r.width > 0 && r.height > 0;
+                })
+                .map((el) => ({ el, x: 0, y: 0 }));
+            updateAnchorPositions();
+        }
+        function updateAnchorPositions() {
+            for (const a of anchorList) {
+                const r = a.el.getBoundingClientRect();
+                a.x = r.left + r.width / 2;
+                a.y = r.top + r.height / 2;
+            }
+        }
+        collectInteractive();
+        window.addEventListener('resize', collectInteractive);
+        window.addEventListener('scroll', updateAnchorPositions, { passive: true });
+
+        let cMouseX = window.innerWidth / 2, cMouseY = window.innerHeight / 2;
+        let lineX = cMouseX, lineY = cMouseY;
+        let targetCurrent = null;
+
+        document.addEventListener('mousemove', (e) => {
+            cMouseX = e.clientX;
+            cMouseY = e.clientY;
+        });
+
+        function pointInEl(el, x, y) {
+            const r = el.getBoundingClientRect();
+            return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+        }
+
+        function anchorDraw() {
+            collectInteractive();
+            anchorCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+            updateAnchorPositions();
+
+            let hoverA = null;
+            for (const a of anchorList) {
+                if (pointInEl(a.el, cMouseX, cMouseY)) hoverA = a;
+            }
+
+            targetCurrent = hoverA;
+
+            const hovering = !!(hoverA && targetCurrent === hoverA);
+            crosshair.classList.toggle('active', !!hovering);
+
+            const tgt = targetCurrent;
+            if (tgt) {
+                const targetX = tgt.x;
+                const targetY = tgt.y;
+                const dx = targetX - lineX;
+                const dy = targetY - lineY;
+                const jerk = 0.16;
+                lineX += dx * jerk;
+                lineY += dy * jerk;
+
+                const cx = (lineX + targetX) / 2 + (lineY - targetY) * 0.28;
+                const cy = (lineY + targetY) / 2 - (lineX - targetX) * 0.28;
+
+                const r = tgt.el.getBoundingClientRect();
+                const pad = 6;
+                const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 400);
+                const ox = r.left - pad, oy = r.top - pad;
+                const w = r.width + pad * 2, h = r.height + pad * 2;
+
+                anchorCtx.save();
+                anchorCtx.beginPath();
+                anchorCtx.rect(0, 0, window.innerWidth, window.innerHeight);
+                anchorCtx.rect(ox, oy, w, h);
+                anchorCtx.clip('evenodd');
+
+                anchorCtx.strokeStyle = 'rgba(255,255,255,0.35)';
+                anchorCtx.lineWidth = 1;
+                anchorCtx.beginPath();
+                anchorCtx.moveTo(cMouseX, cMouseY);
+                anchorCtx.quadraticCurveTo(cx, cy, targetX, targetY);
+                anchorCtx.stroke();
+                anchorCtx.restore();
+
+                anchorCtx.strokeStyle = `rgba(255,255,255,${(0.22 + 0.1 * pulse).toFixed(3)})`;
+                anchorCtx.lineWidth = 1;
+                anchorCtx.strokeRect(ox, oy, w, h);
+
+                const c = 9;
+                anchorCtx.strokeStyle = `rgba(255,255,255,${(0.4 + 0.18 * pulse).toFixed(3)})`;
+                [ [ox, oy, 1, 1], [ox + w, oy, -1, 1], [ox, oy + h, 1, -1], [ox + w, oy + h, -1, -1] ].forEach(([x, y, dx2, dy2]) => {
+                    anchorCtx.beginPath();
+                    anchorCtx.moveTo(x + c * dx2, y);
+                    anchorCtx.lineTo(x, y);
+                    anchorCtx.lineTo(x, y + c * dy2);
+                    anchorCtx.stroke();
+                });
+            } else {
+                lineX = cMouseX;
+                lineY = cMouseY;
+            }
+
+            requestAnimationFrame(anchorDraw);
+        }
+        requestAnimationFrame(anchorDraw);
+    </script>
+
+    <script>
+        /* ---- BLOCK. sphere — point cloud 3D (p5.js) ----
+           Parametri grafici regolabili in FACE_PARAMS. */
+        const FACE_PARAMS = {
+            sizeFactor: 0.3,       // frazione di min(width,height) occupata dalla sfera
+            spacing: 0.048,        // distanza tra i punti (più piccolo = più denso)
+            jitter: 0.01,          // irregolarità posizionale dei punti
+            backSpacing: 0.09,     // non usato
+            pointR: 1.2,           // dimensione punti (px)
+            backR: 2.0,            // non usato
+            eyeR: 4.0,             // non usato
+            pupilR: 5.0,           // non usato
+            faceAlpha: 0.55,       // opacità punti
+            backAlpha: 0.3,        // non usato
+            eyeAlpha: 0.85,        // non usato
+            pupilAlpha: 1,         // non usato
+            sway: 0.18,             // ampiezza rotazione verso il cursore
+            follow: 0.04,            // velocità di "inseguimento" del cursore
+            lineCount: 650,        // numero di linee attive contemporaneamente
+            lineMaxSteps: 10,      // distanza max (in passi) tra due punti collegati
+            lineWeight: 0.7,       // spessore linea (px)
+            lineAlpha: 0.45,       // opacità linee
+            lineLife: 22,          // durata media di una linea (frame)
+            lineSegs: 14,          // campioni per curva
+            pulseAmp: 0.04,        // ampiezza radiale (frazione del raggio)
+            pulseScale: 2.0,       // scala spaziale del rumore (bolle larghe)
+            pulseSpeed: 0.004,     // avanzamento tempo rumore per frame
+        };
+
+        const FP = FACE_PARAMS;
+        const facePts = [];
+        const lines = [];
+        const tagEl = document.getElementById('globe-tag');
+        const tagAnchor = { x: 0, y: 0, z: 0.35 };
+
+        function buildFace() {
+            facePts.length = 0;
+
+            const r = 0.9;
+            for (let phi = 0; phi <= Math.PI; phi += FP.spacing) {
+                const r0 = r * Math.sin(phi);
+                const y = r * Math.cos(phi);
+                const steps = Math.max(8, Math.round((2 * Math.PI * r0) / FP.spacing));
+                for (let i = 0; i < steps; i++) {
+                    const theta = (i / steps) * 2 * Math.PI;
+                    const jx = (Math.random() - 0.5) * FP.jitter;
+                    const jy = (Math.random() - 0.5) * FP.jitter;
+                    const jz = (Math.random() - 0.5) * FP.jitter;
+                    facePts.push({
+                        x: r0 * Math.cos(theta) + jx,
+                        y: y + jy,
+                        z: r0 * Math.sin(theta) + jz,
+                    });
+                }
+            }
+        }
+
+        let rotY = 0, rotX = 0;
+        let pulseT = 0;
+
+        function displacedPos(x, y, z) {
+            const sc = FP.pulseScale;
+            const n = noise(x * sc, y * sc, z * sc + pulseT) * 2 - 1;
+            const f = 1 + FP.pulseAmp * n;
+            return { x: x * f, y: y * f, z: z * f };
+        }
+
+        function applyPulse() {
+            pulseT += FP.pulseSpeed;
+            for (const p of facePts) {
+                const d = displacedPos(p.x, p.y, p.z);
+                p.px = d.x;
+                p.py = d.y;
+                p.pz = d.z;
+            }
+        }
+
+        function distSq(a, b) {
+            const dx = a.x - b.x, dy = a.y - b.y, dz = a.z - b.z;
+            return dx * dx + dy * dy + dz * dz;
+        }
+
+        function spawnLine(existing) {
+            const maxD = (FP.spacing * (2 + Math.random() * 5)) ** 2;
+            const a = facePts[(Math.random() * facePts.length) | 0];
+            let b = null;
+            for (let attempt = 0; attempt < 40; attempt++) {
+                const cand = facePts[(Math.random() * facePts.length) | 0];
+                if (cand !== a && distSq(a, cand) <= maxD) { b = cand; break; }
+            }
+            if (!b) return;
+            const life = 40 + Math.random() * 60;
+            if (existing) {
+                existing.a = a; existing.b = b; existing.age = 0;
+                existing.life = life; existing.maxSteps = maxD;
+                existing.breathPhase = Math.random() * Math.PI * 2;
+                existing.breathSpeed = 0.02 + Math.random() * 0.04;
+                existing.fadeIn = 0.12 + Math.random() * 0.10;
+                existing.fadeOut = 0.70 + Math.random() * 0.15;
+            } else {
+                lines.push({
+                    a, b,
+                    life: life,
+                    age: 0,
+                    maxSteps: maxD,
+                    breathPhase: Math.random() * Math.PI * 2,
+                    breathSpeed: 0.02 + Math.random() * 0.04,
+                    fadeIn: 0.12 + Math.random() * 0.10,
+                    fadeOut: 0.70 + Math.random() * 0.15,
+                });
+            }
+        }
+
+        function pickTagAnchor() {
+            const picked = labelList.find(L => L.label === 'D4');
+            if (picked) {
+                const R = 0.92;
+                const len = Math.hypot(picked.x, picked.y, picked.z) || 1;
+                tagAnchor.x = (picked.x / len) * R;
+                tagAnchor.y = (picked.y / len) * R;
+                tagAnchor.z = (picked.z / len) * R;
+            }
+        }
+
+        function resetLines() {
+            lines.length = 0;
+            for (let i = 0; i < FP.lineCount; i++) spawnLine();
+        }
+
+        function setup() {
+            const c = createCanvas(windowWidth, windowHeight, WEBGL);
+            c.id('face-canvas');
+            pixelDensity(1);
+            buildFace();
+            noStroke();
+            buildLabels();
+            resetLines();
+            pickTagAnchor();
+
+            labelEls.length = 0;
+            for (const L of labelList) {
+                const d = document.createElement('div');
+                d.className = 'coord-globe';
+                d.textContent = L.label;
+                document.body.appendChild(d);
+                labelEls.push({ el: d, p: L });
+            }
+        }
+
+        const labelList = [];
+        const labelEls = [];
+        function buildLabels() {
+            labelList.length = 0;
+            const rings = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+            const cols = 12;
+            for (let i = 1; i < rings.length - 1; i++) {
+                const phi = Math.PI * (i + 0.5) / rings.length;
+                const r0 = 0.9 * Math.sin(phi);
+                const yy = 0.9 * Math.cos(phi);
+                for (let j = 0; j < cols; j++) {
+                    const theta = 2 * Math.PI * (j + 0.5) / cols;
+                    labelList.push({
+                        x: r0 * Math.cos(theta),
+                        y: yy,
+                        z: r0 * Math.sin(theta),
+                        label: rings[i] + (j + 1),
+                    });
+                }
+            }
+        }
+
+        function draw() {
+            clear();
+
+            const nx = (mouseX / width - 0.5) * 2;
+            const ny = (mouseY / height - 0.5) * 2;
+
+            const targetRotY = nx * FP.sway;
+            const targetRotX = -ny * FP.sway * 0.6;
+            rotY += (targetRotY - rotY) * FP.follow;
+            rotX += (targetRotX - rotX) * FP.follow;
+
+            const s = Math.min(width, height) * FP.sizeFactor * 2;
+            applyPulse();
+            push();
+            rotateY(rotY);
+            rotateX(rotX + 0.12);
+
+            for (let i = 0; i < lines.length; i++) {
+                const l = lines[i];
+                l.age++;
+
+                if (l.age > l.life) {
+                    spawnLine(l);
+                }
+
+                l.breathPhase += l.breathSpeed;
+                const breath = 0.7 + 0.3 * Math.sin(l.breathPhase);
+                const travel = (l.age / l.life) * 2;
+                const tail = 0.55;
+
+                const ax = l.a.px * s, ay = l.a.py * s, az = l.a.pz * s;
+                const bx = l.b.px * s, by = l.b.py * s, bz = l.b.pz * s;
+                const mx = (ax + bx) * 0.5, my = (ay + by) * 0.5, mz = (az + bz) * 0.5;
+                const lenM = Math.hypot(mx, my, mz) || 1;
+                const distAB = Math.hypot(ax - bx, ay - by, az - bz);
+                const bulge = distAB * 0.18;
+                const cx = mx + (mx / lenM) * bulge;
+                const cy = my + (my / lenM) * bulge;
+                const cz = mz + (mz / lenM) * bulge;
+
+                const steps = FP.lineSegs;
+                for (let k = 0; k < steps; k++) {
+                    const p = (k + 0.5) / steps;
+                    const d = travel - p;
+                    if (d < 0 || d > tail) continue;
+                    const segAlpha = 1 - (d / tail);
+
+                    const t0 = k / steps;
+                    const t1 = (k + 1) / steps;
+                    const u0 = 1 - t0, u1 = 1 - t1;
+                    const x0 = u0 * u0 * ax + 2 * u0 * t0 * cx + t0 * t0 * bx;
+                    const y0 = u0 * u0 * ay + 2 * u0 * t0 * cy + t0 * t0 * by;
+                    const z0 = u0 * u0 * az + 2 * u0 * t0 * cz + t0 * t0 * bz;
+                    const x1 = u1 * u1 * ax + 2 * u1 * t1 * cx + t1 * t1 * bx;
+                    const y1 = u1 * u1 * ay + 2 * u1 * t1 * cy + t1 * t1 * by;
+                    const z1 = u1 * u1 * az + 2 * u1 * t1 * cz + t1 * t1 * bz;
+
+                    strokeWeight(FP.lineWeight * breath * segAlpha);
+                    stroke(235, 235, 235, FP.lineAlpha * 255 * segAlpha);
+                    line(x0, y0, z0, x1, y1, z1);
+                }
+            }
+
+            strokeWeight(FP.pointR * 2);
+            stroke(235, 235, 235, FP.faceAlpha * 255);
+            for (const p of facePts) {
+                point(p.px * s, p.py * s, p.pz * s);
+            }
+
+            pop();
+
+            const tagD = displacedPos(tagAnchor.x, tagAnchor.y, tagAnchor.z);
+            let px = tagD.x * s, py = tagD.y * s, pz = tagD.z * s;
+
+            const aY = rotY;
+            const px1 = px * Math.cos(aY) + pz * Math.sin(aY);
+            const pz1 = -px * Math.sin(aY) + pz * Math.cos(aY);
+            const py1 = py;
+
+            const aX = rotX + 0.12;
+            const py2 = py1 * Math.cos(aX) - pz1 * Math.sin(aX);
+            const pz2 = py1 * Math.sin(aX) + pz1 * Math.cos(aX);
+            const px2 = px1;
+
+            const f = (height / 2) / Math.tan(Math.PI / 6);
+            if (pz2 >= f) {
+                tagEl.style.display = 'none';
+            } else {
+                let left = width / 2 + (px2 * f) / (f - pz2);
+                let top = height / 2 + (py2 * f) / (f - pz2);
+                tagEl.style.display = 'block';
+                tagEl.style.left = left + 'px';
+                tagEl.style.top = top + 'px';
+            }
+            for (let i = 0; i < labelEls.length; i++) {
+                const L = labelEls[i];
+                const labD = displacedPos(L.p.x, L.p.y, L.p.z);
+                const lx = labD.x * s;
+                const ly = labD.y * s;
+                const lz = labD.z * s;
+
+                const lx1 = lx * Math.cos(aY) + lz * Math.sin(aY);
+                const lz1 = -lx * Math.sin(aY) + lz * Math.cos(aY);
+                const ly1 = ly;
+
+                const ly2 = ly1 * Math.cos(aX) - lz1 * Math.sin(aX);
+                const lz2 = ly1 * Math.sin(aX) + lz1 * Math.cos(aX);
+                const lx2 = lx1;
+
+                if (lz2 >= f) {
+                    L.el.style.display = 'none';
+                } else {
+                    let left = width / 2 + (lx2 * f) / (f - lz2);
+                    let top = height / 2 + (ly2 * f) / (f - lz2);
+                    L.el.style.display = 'block';
+                    L.el.style.left = left + 'px';
+                    L.el.style.top = top + 'px';
+                }
+            }
+        }
+
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);
+        }
+    </script>
+</body>
+</html>

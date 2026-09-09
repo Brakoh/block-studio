@@ -8,7 +8,7 @@
 ---
 
 ## Overview progetto
-Sito single-page per **BLOCK. Studio** (design studio di East London). Stile: **urbano, minimal, coordinate geografiche come elementi estetici**. Il sito è un unico file `index.html` con CSS e JS inline.
+Sito per **BLOCK. Studio** (design studio di East London). Stile: **urbano, minimal, coordinate geografiche come elementi estetici**. Ogni pagina è un HTML autonomo con CSS e JS inline.
 
 Pubblicato su GitHub Pages da repo `Brakoh/block-studio`.
 
@@ -16,7 +16,9 @@ Pubblicato su GitHub Pages da repo `Brakoh/block-studio`.
 
 ## File structure
 ```
-index.html              — unico file del sito (CSS + HTML + JS)
+index.html                  — home (CSS + HTML + JS)
+globe.html                  — pagina GLOBE (sfera p5, MEME, Return)
+dr_strange.html             — telaio grafico isolato, non linkato dalla home
 BustBaseMesh_Decimated.obj  — modello 3D ZBrush in cartella, NON utilizzato
 ```
 
@@ -58,20 +60,23 @@ Font: `Inter` (corpo), `Space Mono` (coordinate / UI).
 - Disegna anche un rettangolo di hitbox con spaziatura `pad=6` e piccoli angoli alle estremità.
 - Usa `clip('evenodd')` per escludere l'area interna dell'hitbox dalla linea (la linea non attraversa l'elemento).
 - Sistema di filtro: `interactiveSel = 'a, button, input, select, textarea, [role="link"], .hero h1'`.
-- `collectInteractive()` filtra elementi per stato GLOBE (aperto/chiuso) e li mappa in `anchorList`.
+- `collectInteractive()` mappa gli elementi visibili in `anchorList`.
+- Su `globe.html` la linea si aggancia **solo in hover** (niente magnete verso la sfera).
 
 ---
 
-## Scheda GLOBE
-- Overlay a schermo pieno (`#globe-screen`, `position: fixed; inset: 0; z-index: 9000;`), aperto cliccando sul titolo **BLOCK** in hero (`.hero h1`).
-- Pulsante Return in alto a sinistra (`#globe-return`) e chiusura con tasto **Escape**.
-- Al caricamento `history.scrollRestoration = 'manual'` e `window.scrollTo(0, 0)` per partire sempre dall'alto al refresh.
+## Pagina GLOBE (`globe.html`)
+- Pagina autonoma, aperta cliccando sul titolo **BLOCK** in hero (`.hero h1`) → `globe.html`.
+- Pulsante Return in alto a sinistra (`#globe-return`) e tasto **Escape** tornano a `index.html`.
+- Al caricamento della home `history.scrollRestoration = 'manual'` e `window.scrollTo(0, 0)` per partire sempre dall'alto al refresh.
 
 ### Sfera 3D (p5.js WEBGL)
-- Canvas `#face-canvas` (`z-index: 9001`, `pointer-events: none`).
-- Sfera procedurale di punti (~2600 punti) con **~110 linee randomiche attive** che collegano punti vicini e si rigenerano dinamicamente.
+- Canvas `#face-canvas` (`z-index: 9001`, `pointer-events: none`), visibile per tutta la pagina.
+- Sfera procedurale di punti (~2600 punti).
 - La sfera **segue leggermente il cursore**: parametri `sway: 0.18`, `follow: 0.04` (movimento molto contenuto).
-- Al click su BLOCK, la sfera si **resetta**: `rotY = 0`, `rotX = 0`, linee svuotate e rigenerate.
+- Al caricamento di `globe.html` la sfera parte da `rotY = 0`, `rotX = 0`, linee generate in `setup()`.
+- Linee **curve** (~140) tra punti vicini, con vita e coda; gli estremi sono `a.x/y/z`.
+- MEME e `.coord-globe` usano la proiezione manuale sulle posizioni di riposo. Nascosti quando `lz2 >= f`.
 - **Proiezione manuale**: NON usare `screenX/screenY/screenZ` di p5 (crashano/bloccano il draw loop). La proiezione 2D dei DOM elementi agganciati alla sfera viene calcolata manualmente applicando le stesse rotazioni `rotateY(rotY)` + `rotateX(rotX + 0.12)` e poi proiezione prospettica con fov 60° (`f = (height/2)/tan(PI/6)`).
 
 ### Pulsante MEME
@@ -81,17 +86,16 @@ Font: `Inter` (corpo), `Space Mono` (coordinate / UI).
 - Se la sfera ruota e il punto finisce dietro, il pulsante si nasconde (`display: none`).
 
 ### Coordinate GLOBE (coordinate_globe)
-- Griglia temporanea di **96 etichette** (`A1`…`H12`) distribuite uniformemente sulla sfera come riferimento.
-- Elementi DOM `.coord-globe` (`z-index: 9005`), creati dinamicamente in `setup()`.
-- Proiezione manuale come MEME, nascoste quando il punto è dietro la sfera (`lz2 >= f`) o quando GLOBE è chiuso.
+- Griglia temporanea di **72 etichette** (`B1`…`G12`) distribuite sulla sfera come riferimento. Gli anelli polari A e H sono omessi.
+- Elementi DOM `.coord-globe` (`z-index: 9005`), creati dinamicamente in `setup()` e appesi al `body`.
+- Proiezione manuale come MEME, nascoste quando il punto è dietro la sfera (`lz2 >= f`).
 
 ---
 
 ## Convenzioni tecniche
-- **Single-file**: tutto CSS e JS sono inline in `index.html`.
-- **p5.js WEBGL**: caricato da CDN (`1.9.4`). Il secondo `<script>` contiene la sfera.
-- **JS scope**: il primo script gestisce UI/interattività/linea, il secondo gestisce p5 (globo).
-- **Comunicazione tra script**: `window.resetGlobe` esposta dallo script p5, chiamata da `openGlobe()` nello script UI.
+- **Pagine autonome**: CSS e JS inline in ciascun HTML (`index.html`, `globe.html`, `dr_strange.html`).
+- **p5.js WEBGL**: caricato da CDN (`1.9.4`) **solo** su `globe.html`. Il secondo `<script>` di `globe.html` contiene la sfera.
+- **JS scope** su `globe.html`: il primo script gestisce UI/interattività/linea, il secondo gestisce p5 (globo).
 - **Transizioni CSS**: usare `cubic-bezier(0.45, 0, 0.55, 1)` o `cubic-bezier(0.55, 0, 0.25, 1)` per movimenti gentle/morbidi.
 - **No git push**: **NON fare push su GitHub** finché l'utente non lo chiede esplicitamente.
 - **No `screenX/Y/Z` in p5 WEBGL**: usare sempre la proiezione manuale (vedi codice esistente nel draw).
@@ -101,8 +105,8 @@ Font: `Inter` (corpo), `Space Mono` (coordinate / UI).
 ## Flussi principali
 | Azione | Effetto |
 |--------|---------|
-| Click su **BLOCK** (hero) | Apre GLOBE, resetta sfera, linee ripartono |
-| Click **Return** o tasto **Esc** | Chiude GLOBE |
+| Click su **BLOCK** (hero) | Vai a `globe.html` |
+| Click **Return** o tasto **Esc** (su GLOBE) | Vai a `index.html` |
 | Mouse su elemento interattivo | Crosshair ruota 180°, linea curva si aggancia, hitbox appare |
 | Mouse fuori da elementi | Linea si retrae verso il cursore, hitbox scompare |
 | Hover su MEME | Macchia bianca sale riempiendo il bottone, testo inverte |
