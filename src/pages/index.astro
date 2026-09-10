@@ -1,0 +1,137 @@
+---
+import StudioLayout from '../layouts/StudioLayout.astro';
+import '../styles/home.css';
+import { copy } from '../lib/copy';
+import { getCollection } from 'astro:content';
+
+const projects = (await getCollection('projects_edit')).sort((a, b) =>
+	a.id.localeCompare(b.id),
+);
+
+function projectIndex(id: string) {
+	const match = id.match(/^(\d+)/);
+	return match ? match[1] : id;
+}
+
+const logo = `${copy.identity.word}.`;
+const { home } = copy;
+---
+
+<StudioLayout page="home">
+	<nav>
+		<div class="logo">{logo}</div>
+		<ul class="nav-links">
+			<li><a href="#about">{home.nav.about}</a></li>
+			<li><a href="#work">{home.nav.work}</a></li>
+			<li><a href="#contact">{home.nav.contact}</a></li>
+		</ul>
+		<div class="nav-coord" id="nav-time"></div>
+	</nav>
+
+	<section class="hero">
+		<div class="hero-grid">
+			<h1>{copy.identity.word}<span class="square-dot"></span></h1>
+			<span class="hero-sub">{home.hero.location}</span>
+			<div class="hero-coord">
+				{home.hero.coord}
+			</div>
+		</div>
+	</section>
+
+	<div class="coord-divider">
+		<span>{home.dividers[0]}</span>
+	</div>
+
+	<section id="about">
+		<div class="section-header">
+			<div class="section-label">{home.about.label}</div>
+			<div class="section-number">{home.about.number}</div>
+		</div>
+		<div class="about-grid">
+			<div class="about-text">
+				{home.about.paragraphs.map((paragraph, i) => (
+					<>
+						{i > 0 && <br />}
+						<p>{paragraph}</p>
+					</>
+				))}
+			</div>
+			<div class="about-coords">
+				{home.about.facts.map((fact) => (
+					<div class="coord-block">
+						<span class="coord-label">{fact.label}</span>
+						<span class="coord-value">{fact.value}</span>
+					</div>
+				))}
+			</div>
+		</div>
+	</section>
+
+	<div class="coord-divider">
+		<span>{home.dividers[1]}</span>
+	</div>
+
+	<section id="work">
+		<div class="section-header">
+			<div class="section-label">{home.work.label}</div>
+			<div class="section-number">{home.work.number}</div>
+		</div>
+		<div class="projects-list">
+			{projects.map((project) => (
+				<a href={project.data.url} class="project-item">
+					<span class="project-index">{projectIndex(project.id)}</span>
+					<div class="project-info">
+						<h3>{project.data.title}</h3>
+						<span class="project-tag">{project.data.tag}</span>
+					</div>
+					<span class="project-coord">{project.data.inscription}</span>
+				</a>
+			))}
+		</div>
+	</section>
+
+	<div class="coord-divider">
+		<span>{home.dividers[2]}</span>
+	</div>
+
+	<section id="contact">
+		<div class="section-header">
+			<div class="section-label">{home.contact.label}</div>
+			<div class="section-number">{home.contact.number}</div>
+		</div>
+		<div class="contact-content">
+			<h2 class="section-title">{home.contact.title[0]}<br /><span>{home.contact.title[1]}</span></h2>
+			<a href={`mailto:${copy.identity.email}`} class="contact-email">{copy.identity.email}</a>
+			<div class="contact-coords">
+				{home.contact.places.map((place) => (
+					<div class="contact-coord-item">
+						<div class="label">{place.label}</div>
+						<div class="value">{place.value}</div>
+					</div>
+				))}
+			</div>
+		</div>
+	</section>
+
+	<footer>
+		<span>{home.footer.copyright}</span>
+		<span>{home.footer.coord}</span>
+	</footer>
+
+	<script>
+		import { initStudioUI, startUtcClock, resetHomeScroll } from '../scripts/studio-ui.js';
+
+		resetHomeScroll();
+		initStudioUI({ magnet: true });
+		startUtcClock(document.getElementById('nav-time'));
+
+		document.querySelector('.hero h1')?.addEventListener('click', () => {
+			location.href = `${import.meta.env.BASE_URL}globe`;
+		});
+		document.addEventListener('click', (e) => {
+			if (e.target instanceof Element && e.target.closest('.hero h1')) {
+				location.href = `${import.meta.env.BASE_URL}globe`;
+			}
+		});
+	</script>
+</StudioLayout>

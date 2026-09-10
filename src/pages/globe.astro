@@ -1,0 +1,28 @@
+---
+import StudioLayout from '../layouts/StudioLayout.astro';
+import '../styles/globe.css';
+import { copy } from '../lib/copy';
+---
+
+<StudioLayout page="globe">
+	<button class="globe-return" id="globe-return">{copy.globe.return}</button>
+	<button class="globe-tag" id="globe-tag"><span>{copy.globe.tags.meme}</span></button>
+	<a href={`${import.meta.env.BASE_URL}dr-strange`} class="globe-tag" id="globe-tag-strange"><span>{copy.globe.tags.dr_strange}</span></a>
+	<button class="globe-tag" id="globe-tag-depth"><span>{copy.globe.tags.depth}</span></button>
+
+	<script>
+		import { initStudioUI } from '../scripts/studio-ui.js';
+
+		initStudioUI({ magnet: true, parkCursor: true });
+
+		function goHome() {
+			location.href = import.meta.env.BASE_URL;
+		}
+		document.getElementById('globe-return')?.addEventListener('click', goHome);
+		document.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape') goHome();
+		});
+	</script>
+
+	<script is:inline src={`${import.meta.env.BASE_URL}scripts/globe-sphere.js`}></script>
+</StudioLayout>

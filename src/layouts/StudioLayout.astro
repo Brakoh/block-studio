@@ -1,0 +1,40 @@
+---
+import '../styles/global.css';
+import { copy } from '../lib/copy';
+
+interface Props {
+	page: 'home' | 'globe' | 'strange';
+}
+
+const { page } = Astro.props;
+const corners = copy.chrome.corners;
+---
+
+<!doctype html>
+<html lang="en" data-page={page}>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link rel="icon" type="image/svg+xml" href={`${import.meta.env.BASE_URL}favicon.svg`} />
+		<meta name="generator" content={Astro.generator} />
+		<title>{copy.window_title}</title>
+		{page === 'globe' && (
+			<script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+		)}
+	</head>
+	<body data-page={page}>
+		<div class="watermark">{copy.chrome.watermark}</div>
+		<div class="side-strip">{copy.chrome.side_strip}</div>
+
+		<span class="corner-coord tl">{corners.tl[0]}<br />{corners.tl[1]}</span>
+		<span class="corner-coord tr">{corners.tr[0]}<br />{corners.tr[1]}</span>
+		<span class="corner-coord bl">{corners.bl[0]}<br />{corners.bl[1]}</span>
+		<span class="corner-coord br">{corners.br[0]}<br />{corners.br[1]}</span>
+
+		<div class="crosshair" id="crosshair"></div>
+		<canvas id="anchor-line"></canvas>
+		<div class="crosshair-coord" id="crosshair-coord"></div>
+
+		<slot />
+	</body>
+</html>

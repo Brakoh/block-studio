@@ -1,0 +1,20 @@
+---
+import StudioLayout from '../layouts/StudioLayout.astro';
+import { copy } from '../lib/copy';
+
+const logo = `${copy.identity.word}.`;
+---
+
+<StudioLayout page="strange">
+	<nav>
+		<div class="logo">{logo}</div>
+		<div class="nav-coord" id="nav-time"></div>
+	</nav>
+
+	<script>
+		import { initStudioUI, startUtcClock } from '../scripts/studio-ui.js';
+
+		initStudioUI({ magnet: true });
+		startUtcClock(document.getElementById('nav-time'));
+	</script>
+</StudioLayout>

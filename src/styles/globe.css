@@ -1,0 +1,99 @@
+.globe-return {
+    position: fixed;
+    top: 24px;
+    left: 24px;
+    z-index: 9002;
+    background: transparent;
+    border: 1px solid var(--muted);
+    color: var(--fg);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    padding: 18px 36px;
+    transition: opacity 0.3s, background 0.3s;
+}
+
+.globe-return:hover {
+    opacity: 0.6;
+    background: rgba(196,196,196,0.04);
+}
+
+.globe-tag {
+    position: fixed;
+    transform: translate(-50%, -50%);
+    z-index: 9007;
+    background: #000;
+    border: 1px solid #fff;
+    color: #fff;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    padding: 12px 24px;
+    white-space: nowrap;
+    pointer-events: auto;
+    display: none;
+    overflow: hidden;
+    text-decoration: none;
+    transition: color 0.55s cubic-bezier(0.55, 0, 0.25, 1);
+}
+
+.globe-tag > span {
+    position: relative;
+    z-index: 1;
+}
+
+.globe-tag::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: #fff;
+    transform: translateY(100%);
+    transition: transform 0.6s cubic-bezier(0.55, 0, 0.25, 1),
+                clip-path 0.6s cubic-bezier(0.55, 0, 0.25, 1);
+    clip-path: polygon(
+        0% 110%, 8% 108%, 16% 105%, 24% 104%, 33% 106%, 41% 112%, 50% 120%,
+        58% 112%, 66% 106%, 75% 104%, 83% 105%, 91% 108%, 100% 110%,
+        100% 100%, 0% 100%
+    );
+}
+
+.globe-tag:hover {
+    color: #000;
+}
+
+.globe-tag:hover::after {
+    transform: translateY(0);
+    clip-path: polygon(
+        0% -11%, 8% -6%, 16% -2%, 24% 0%, 33% -3%, 41% -8%, 50% -12%,
+        58% -8%, 66% -3%, 75% 0%, 83% -2%, 91% -6%, 100% -11%,
+        100% 100%, 0% 100%
+    );
+}
+
+.coord-globe {
+    position: fixed;
+    transform: translate(-50%, -50%);
+    z-index: 9005;
+    background: #000;
+    border: 1px solid var(--muted);
+    color: #fff;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 0.12em;
+    padding: 2px 6px;
+    pointer-events: none;
+    white-space: nowrap;
+    display: none;
+}
+
+#face-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9001;
+}

@@ -1,0 +1,81 @@
+# Copy del sito (inglese). Cambia qui i testi, salva, il browser si aggiorna.
+# I Project NON stanno qui: apri src/content/projects_edit/
+
+identity:
+  word: GLOBE
+  email: veethoryo@gmail.com
+
+window_title: "51°30'N — 0°07'W"
+
+chrome:
+  watermark: "51°30'26.4\"N 0°07'39.6\"W"
+  side_strip: "51.5074° N — 0.1278° W — LONDON — GB"
+  corners:
+    tl:
+      - "51°30'26.4\"N"
+      - "0°07'39.6\"W"
+    tr:
+      - "GRID REF: TQ 3080"
+      - "SECTOR: CENTRAL"
+    bl:
+      - "55.9533° N"
+      - "3.1883° W"
+    br:
+      - "ALTITUDE: 11M"
+      - "OSGB36"
+
+home:
+  nav:
+    about: About
+    work: Work
+    contact: Contact
+  hero:
+    location: Explore the world
+    coord: "51°30'26.4\"N   0°07'39.6\"W   —   Est. 2019   —   Design & Digital"
+  dividers:
+    - "51.5074° N  ·  0.1278° W"
+    - "OSGB36 · WGS84 · ETRS89"
+    - "ELEVATION — 11M — ABOVE SEA LEVEL — TIDAL"
+  about:
+    label: About
+    number: "001"
+    paragraphs:
+      - We are a small design studio based in East London, working at the intersection of identity, space, and digital experience. Our practice is rooted in precision — every decision is deliberate, every detail mapped.
+      - Founded in Shoreditch, operating from a converted warehouse off Brick Lane. We believe in restraint, structure, and the quiet power of well-placed coordinates.
+    facts:
+      - label: Lat
+        value: "51.5074° N"
+      - label: Long
+        value: "0.1278° W"
+      - label: Alt
+        value: 11 m
+      - label: Grid
+        value: TQ 3380
+      - label: Timezone
+        value: GMT / BST
+  work:
+    label: Selected Work
+    number: "002"
+  contact:
+    label: Contact
+    number: "003"
+    title:
+      - Get In
+      - Touch
+    places:
+      - label: Studio
+        value: "51°31'12.0\"N"
+      - label: London
+        value: "0°04'30.0\"W"
+      - label: United Kingdom
+        value: E1 6RF
+  footer:
+    copyright: "© 2026 Block Studio"
+    coord: "51.5074° N, 0.1278° W"
+
+globe:
+  return: Return
+  tags:
+    meme: MEME
+    dr_strange: DR_STRANGE
+    depth: COMPOSER
