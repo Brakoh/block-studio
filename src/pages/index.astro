@@ -120,17 +120,18 @@ const { home } = copy;
 
 	<script>
 		import { initStudioUI, startUtcClock, resetHomeScroll } from '../scripts/studio-ui.js';
+		import { withBase } from '../lib/base';
 
 		resetHomeScroll();
 		initStudioUI({ magnet: true });
 		startUtcClock(document.getElementById('nav-time'));
 
 		document.querySelector('.hero h1')?.addEventListener('click', () => {
-			location.href = `${import.meta.env.BASE_URL}globe`;
+			location.href = withBase('globe');
 		});
 		document.addEventListener('click', (e) => {
 			if (e.target instanceof Element && e.target.closest('.hero h1')) {
-				location.href = `${import.meta.env.BASE_URL}globe`;
+				location.href = withBase('globe');
 			}
 		});
 	</script>
