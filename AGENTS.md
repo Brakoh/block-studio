@@ -12,6 +12,8 @@ Sito per **BLOCK. Studio** (design studio di East London). Stile: **urbano, mini
 
 Stack: **Astro**. `Test_1/` è l’archivio HTML originale, non è il sito in produzione.
 
+Pubblicato su GitHub Pages: https://brakoh.github.io/block-studio/
+
 Quando avvii il server di sviluppo, usa la modalità background:
 
 ```
