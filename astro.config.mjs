@@ -7,4 +7,7 @@ const pages = process.env.GITHUB_ACTIONS === 'true';
 export default defineConfig({
 	site: 'https://brakoh.github.io',
 	base: pages ? '/block-studio/' : '/',
+	vite: {
+		assetsInclude: ['**/*.fbx'],
+	},
 });
