@@ -1,0 +1,35 @@
+---
+import StudioLayout from '../layouts/StudioLayout.astro';
+import '../styles/globe.css';
+import '../styles/overseers.css';
+import { copy } from '../lib/copy';
+---
+
+<StudioLayout page="overseers">
+	<button class="globe-return" id="globe-return">{copy.globe.return}</button>
+	<video id="overseers-video" playsinline webkit-playsinline muted autoplay></video>
+	<canvas id="overseers-scene"></canvas>
+	<div id="overseers-cam-error">{copy.overseers.camera_unavailable}</div>
+
+	<script>
+		import { initStudioUI } from '../scripts/studio-ui.js';
+		import { withBase } from '../lib/base';
+		import { initOverseers } from '../scripts/overseers-scene.js';
+
+		initStudioUI({ magnet: true });
+
+		function goGlobe() {
+			location.href = withBase('globe');
+		}
+		document.getElementById('globe-return')?.addEventListener('click', goGlobe);
+		document.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape') goGlobe();
+		});
+
+		initOverseers({
+			canvas: document.getElementById('overseers-scene'),
+			video: document.getElementById('overseers-video'),
+			errorEl: document.getElementById('overseers-cam-error'),
+		});
+	</script>
+</StudioLayout>

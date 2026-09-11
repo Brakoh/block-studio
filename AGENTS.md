@@ -36,15 +36,17 @@ src/styles/home.css              — home
 src/styles/globe.css             — pagina GLOBE
 src/scripts/studio-ui.js         — crosshair, linea, orologio UTC, reset scroll home
 src/pages/index.astro            — home
-src/pages/globe.astro            — GLOBE (sfera p5, LOUDNESS, DR_STRANGE, WASTE, Return)
-src/pages/dr-strange.astro       — telaio grafico isolato, non linkato dalla home
+src/pages/globe.astro            — GLOBE (sfera p5, LOUDNESS, OVERSEERS, WASTE, Return)
+src/pages/overseers.astro        — OVERSEERS (Feed CCTV, Blob)
 src/pages/waste.astro            — WASTE (Basin, Rewind, Live)
 src/pages/loudness.astro         — LOUDNESS (città punti/linee, traffico)
 src/scripts/waste-scene.js       — scena canvas WASTE + MediaPipe Hands
+src/scripts/overseers-scene.js   — scena canvas OVERSEERS (webcam, pixel, Blob, MediaPipe)
 src/scripts/loudness-scene.js    — scena Three.js LOUDNESS
 src/scripts/loudness-audio.js    — loop audio LOUDNESS (urban / traffic / siren)
 src/scripts/loudness-mosh.js     — post-process datamosh LOUDNESS
 src/styles/waste.css             — WASTE
+src/styles/overseers.css         — OVERSEERS
 src/styles/loudness.css          — LOUDNESS
 assets/sounds/                   — mp3 urban, traffic, Siren
 public/scripts/globe-sphere.js   — sfera p5 (script classico, globale)
@@ -52,7 +54,7 @@ docs/adr/                        — decisioni di architettura
 Test_1/                          — HTML originale (archivio)
 ```
 
-Route: `/` home · `/globe` GLOBE · `/dr-strange` DR_STRANGE · `/waste` WASTE · `/loudness` LOUDNESS
+Route: `/` home · `/globe` GLOBE · `/overseers` OVERSEERS · `/waste` WASTE · `/loudness` LOUDNESS
 
 ---
 
@@ -114,7 +116,7 @@ Font: `Inter` (corpo), `Space Mono` (coordinate / UI).
 
 ### Pulsanti sulla sfera (`.globe-tag`)
 - **LOUDNESS** (`#globe-tag-loudness`): ancorato a **D4**, link a `/loudness`.
-- **DR_STRANGE** (`#globe-tag-strange`): ancorato a **E3**, link a `/dr-strange`.
+- **OVERSEERS** (`#globe-tag-overseers`): ancorato a **E3**, link a `/overseers`.
 - **WASTE** (`#globe-tag-waste`): ancorato a **E5**, link a `/waste`.
 - Posizionati con proiezione manuale, `z-index: 9007` (sopra canvas e coordinate).
 - **Hover**: fondo nero riempito da **macchia bianca che sale dal basso** (`translateY(100%) → 0`), con clip-path a singola onda che a fine corsa copre interamente il rettangolo. Testo inverte da bianco a nero.
@@ -136,6 +138,12 @@ Font: `Inter` (corpo), `Space Mono` (coordinate / UI).
 - Datamosh dal 50% dello slider: vibrazione e artefatti a blocchi, appena visibili all’inizio, molto forti al 100% (curva quadratica). Sotto il 50% l’immagine è pulita. Solo sul canvas della città, non sul chrome.
 - Banda nera a sinistra (`.loudness-veil`) sotto Return e TRAFFIC, sfumata verso destra fino a sparire nella città.
 
+### Pagina OVERSEERS (`/overseers`)
+- Pagina autonoma, aperta dal tasto **OVERSEERS** su GLOBE (`#globe-tag-overseers`) → `/overseers`.
+- Return in alto a sinistra (stesso posto di GLOBE) e tasto **Escape** tornano a `/globe`.
+- Scena canvas `#overseers-scene`: prima il tracking sul video pulito (MediaPipe Pose, Face, Hands), poi il Feed CCTV a pieno schermo — scala di grigi, celle da 4px, scanline, stutter veloce da vertical sync. I Blob sono finestre visibili agganciate a molte parti della persona (testa, occhi, vestiti, accessori, dita): dentro c’è un ritaglio del Feed sfasato rispetto al video sotto, sopra un codice estetico tipo `B4-2C`.
+- Webcam specchiata, copre lo schermo. Se la camera manca: `CAMERA UNAVAILABLE`. Nessun riquadro Live, nessun altro overlay HUD oltre al chrome dello studio.
+
 ### Pagina WASTE (`/waste`)
 - Pagina autonoma, aperta dal tasto **WASTE** su GLOBE (`#globe-tag-waste`) → `/waste`.
 - Return in alto a sinistra (stesso posto di GLOBE) e tasto **Escape** tornano a `/globe`.
@@ -152,6 +160,7 @@ Font: `Inter` (corpo), `Space Mono` (coordinate / UI).
 - **p5.js WEBGL**: caricato da CDN (`1.9.4`) **solo** su `/globe`. La sfera sta in `public/scripts/globe-sphere.js` (script classico, non modulo).
 - **JS scope** su `/globe`: `studio-ui.js` gestisce UI/linea; `globe-sphere.js` gestisce p5. La sfera legge `window.cMouseX` / `window.cMouseY`.
 - **WASTE**: `studio-ui.js` per chrome/linea; `waste-scene.js` per canvas + MediaPipe Hands (CDN Tasks Vision). Nessun audio.
+- **OVERSEERS**: `studio-ui.js` per chrome/linea; `overseers-scene.js` per canvas 2D (webcam, pixel, Blob) + MediaPipe Pose/Face/Hands (CDN Tasks Vision). Nessun audio.
 - **LOUDNESS**: `studio-ui.js` per chrome (niente linea di aggancio; hitbox fissa sullo slider); `loudness-scene.js` per Three.js (WebGL, Points, LineSegments); `loudness-audio.js` per i tre loop; `loudness-mosh.js` per il datamosh dal 50% dello slider. Slider TRAFFIC verticale sotto Return. Nessun altro overlay HUD oltre al chrome dello studio.
 - **Transizioni CSS**: usare `cubic-bezier(0.45, 0, 0.55, 1)` o `cubic-bezier(0.55, 0, 0.25, 1)` per movimenti gentle/morbidi.
 - **No git push**: **NON fare push su GitHub** finché l'utente non lo chiede esplicitamente.
@@ -167,11 +176,12 @@ Font: `Inter` (corpo), `Space Mono` (coordinate / UI).
 | Click **Return** o tasto **Esc** (su GLOBE) | Vai a `/` |
 | Mouse su elemento interattivo | Crosshair ruota 180°, linea curva si aggancia, hitbox appare |
 | Mouse fuori da elementi | Linea si retrae verso il cursore, hitbox scompare |
-| Hover su LOUDNESS, DR_STRANGE o WASTE | Macchia bianca sale riempiendo il bottone, testo inverte |
+| Hover su LOUDNESS, OVERSEERS o WASTE | Macchia bianca sale riempiendo il bottone, testo inverte |
 | Click su **LOUDNESS** (GLOBE) | Vai a `/loudness` |
-| Click su **DR_STRANGE** (GLOBE) | Vai a `/dr-strange` |
+| Click su **OVERSEERS** (GLOBE) | Vai a `/overseers` |
 | Click su **WASTE** (GLOBE) | Vai a `/waste` |
 | Click **Return** o tasto **Esc** (su LOUDNESS) | Vai a `/globe` |
+| Click **Return** o tasto **Esc** (su OVERSEERS) | Vai a `/globe` |
 | Slider TRAFFIC su LOUDNESS | Più in alto, più veicoli e più strati di suono (fondo, traffico, sirene). Dal 50% in su, datamosh via via più forte |
 | Click **Return** o tasto **Esc** (su WASTE) | Vai a `/globe` |
 | Mano antiorario su WASTE | Rewind verso il pulito; Debris escono; Grade si scalda |

@@ -30,7 +30,7 @@
         const lines = [];
         const globeTags = [
             { el: document.getElementById('globe-tag-loudness'), anchor: { x: 0, y: 0, z: 0.35 }, label: 'D4' },
-            { el: document.getElementById('globe-tag-strange'), anchor: { x: 0, y: 0, z: 0.35 }, label: 'E3' },
+            { el: document.getElementById('globe-tag-overseers'), anchor: { x: 0, y: 0, z: 0.35 }, label: 'E3' },
             { el: document.getElementById('globe-tag-waste'), anchor: { x: 0, y: 0, z: 0.35 }, label: 'E5' },
         ];
 

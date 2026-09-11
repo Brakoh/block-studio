@@ -1,0 +1,49 @@
+#overseers-scene {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: none;
+    z-index: 10;
+    background: #000;
+}
+
+#overseers-video {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 0;
+}
+
+#overseers-cam-error {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    background: #000;
+    color: var(--fg);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+}
+
+#overseers-cam-error.is-visible {
+    display: flex;
+}
+
+body[data-page="overseers"] .watermark {
+    display: none;
+}
+
+body[data-page="overseers"] .corner-coord.tl {
+    top: 88px;
+}

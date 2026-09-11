@@ -77,7 +77,7 @@ globe:
   return: Return
   tags:
     loudness: LOUDNESS
-    dr_strange: DR_STRANGE
+    overseers: OVERSEERS
     waste: WASTE
 
 waste:
@@ -91,3 +91,6 @@ waste:
 
 loudness:
   traffic: TRAFFIC
+
+overseers:
+  camera_unavailable: CAMERA UNAVAILABLE

@@ -58,7 +58,7 @@ export type Copy = {
 		return: string;
 		tags: {
 			loudness: string;
-			dr_strange: string;
+			overseers: string;
 			waste: string;
 		};
 	};
@@ -74,6 +74,9 @@ export type Copy = {
 	};
 	loudness: {
 		traffic: string;
+	};
+	overseers: {
+		camera_unavailable: string;
 	};
 };
 

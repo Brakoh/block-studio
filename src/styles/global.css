@@ -36,7 +36,7 @@ body[data-page="home"] {
 }
 
 body[data-page="globe"],
-body[data-page="strange"],
+body[data-page="overseers"],
 body[data-page="waste"],
 body[data-page="loudness"] {
     min-height: 100vh;
@@ -171,6 +171,7 @@ nav {
 }
 
 body[data-page="globe"] .crosshair,
+body[data-page="overseers"] .crosshair,
 body[data-page="waste"] .crosshair,
 body[data-page="loudness"] .crosshair {
     opacity: 1;

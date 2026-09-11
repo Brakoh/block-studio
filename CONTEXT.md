@@ -63,3 +63,15 @@ _Avoid_: color filter, pretty, colourful overlay, rainbow, daylight
 **Live**:
 Il riquadro webcam su WASTE, sotto Return, in alto a sinistra, a opacità 50%. Mostra chi fa il gesto.
 _Avoid_: camera widget, webcam preview, selfie, DEPTH LIVE
+
+**OVERSEERS**:
+Pagina del sito, aperta dal tasto omonimo sulla sfera GLOBE al posto di DR_STRANGE. Sei visibile come Feed di una camera di sicurezza, con i Blob sopra.
+_Avoid_: DR_STRANGE, selfie, webcam page, face detection, thermal, night vision
+
+**Feed**:
+L’immagine della camera su OVERSEERS: tu resti visibile, in scala di grigi e a blocchi, come una ripresa di sorveglianza.
+_Avoid_: Live, preview, webcam overlay, CCTV come prodotto
+
+**Blob**:
+Una finestra sul Feed agganciata a una parte della persona (testa, occhi, vestiti, accessori, dita). Dentro mostra un ritaglio sfasato di quella zona; sopra un codice solo estetico.
+_Avoid_: bounding box come UI, heatmap, face mesh, skeleton, ID come dato, OpenCV
