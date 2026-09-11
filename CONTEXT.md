@@ -73,5 +73,5 @@ L’immagine della camera su OVERSEERS: tu resti visibile, in scala di grigi e a
 _Avoid_: Live, preview, webcam overlay, CCTV come prodotto
 
 **Blob**:
-Una finestra sul Feed agganciata a una parte della persona (testa, occhi, vestiti, accessori, dita). Dentro mostra un ritaglio sfasato di quella zona; sopra un codice solo estetico.
+Una finestra sul Feed agganciata a una parte della persona (testa, occhi, vestiti, accessori, dita). Bordo verde, ritaglio sfasato, codice solo estetico; linee rette verdi tra le finestre.
 _Avoid_: bounding box come UI, heatmap, face mesh, skeleton, ID come dato, OpenCV

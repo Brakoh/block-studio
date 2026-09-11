@@ -1,6 +1,10 @@
 const CELL = 4;
 const FOLLOW = 0.42;
 const HOLD = 10;
+const LINK_LIFE_MIN = 14;
+const LINK_LIFE_MAX = 34;
+const FEED_LEVEL = 0.78;
+const BLOB_LINE = { r: 110, g: 232, b: 106 };
 const TASKS = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18';
 const POSE_MODEL =
 	'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
@@ -118,6 +122,10 @@ function coverRect(srcW, srcH, dstW, dstH) {
 
 function luma(r, g, b) {
 	return 0.299 * r + 0.587 * g + 0.114 * b;
+}
+
+function lineRgba(a) {
+	return `rgba(${BLOB_LINE.r},${BLOB_LINE.g},${BLOB_LINE.b},${a})`;
 }
 
 function hashStr(s) {
@@ -243,6 +251,7 @@ export async function initOverseers({ canvas, video, errorEl }) {
 	let vhsHoldH = 24;
 	let vhsHoldX = 0;
 	const windows = new Map();
+	const links = [];
 	let lastVideoTime = -1;
 	let poseTs = 0;
 	let faceTs = 0;
@@ -507,6 +516,7 @@ export async function initOverseers({ canvas, video, errorEl }) {
 			let v = luma(d[i], d[i + 1], d[i + 2]);
 			v = (v - 128) * 1.12 + 122;
 			if (y % 2 === 1) v -= 6;
+			v *= FEED_LEVEL;
 			v = Math.max(0, Math.min(255, v));
 			d[i] = v;
 			d[i + 1] = v;
@@ -521,13 +531,88 @@ export async function initOverseers({ canvas, video, errorEl }) {
 
 		ctx.imageSmoothingEnabled = false;
 		ctx.drawImage(tape, 0, 0, w, h);
-		ctx.fillStyle = 'rgba(0,0,0,0.14)';
+		ctx.fillStyle = 'rgba(0,0,0,0.2)';
 		for (let y = 0; y < h; y += 3) ctx.fillRect(0, y, w, 1);
 		return true;
 	}
 
+	function centerOf(t) {
+		return { x: t.x + t.w / 2, y: t.y + t.h / 2 };
+	}
+
+	function pickLinkPair(list) {
+		const n = list.length;
+		if (n < 2) return null;
+		const a = list[(Math.random() * n) | 0];
+		const ca = centerOf(a);
+		const scored = [];
+		for (const b of list) {
+			if (b.key === a.key) continue;
+			const cb = centerOf(b);
+			scored.push({ b, d: Math.hypot(cb.x - ca.x, cb.y - ca.y) });
+		}
+		if (!scored.length) return null;
+		scored.sort((x, y) => x.d - y.d);
+		const far = Math.random() < 0.22 && scored.length > 3;
+		const pool = far ? scored : scored.slice(0, Math.min(4, scored.length));
+		return [a, pool[(Math.random() * pool.length) | 0].b];
+	}
+
+	function tickLinks(list) {
+		const liveKeys = new Set(list.map((t) => t.key));
+		for (let i = links.length - 1; i >= 0; i--) {
+			const L = links[i];
+			L.life++;
+			if (L.life > L.max || !liveKeys.has(L.ak) || !liveKeys.has(L.bk)) {
+				links.splice(i, 1);
+			}
+		}
+		const want = Math.min(36, Math.max(0, Math.round(list.length * 1.8)));
+		let guard = 40;
+		while (links.length < want && guard-- > 0) {
+			const pair = pickLinkPair(list);
+			if (!pair) break;
+			const [a, b] = pair;
+			if (links.some((L) => (L.ak === a.key && L.bk === b.key) || (L.ak === b.key && L.bk === a.key))) {
+				continue;
+			}
+			links.push({
+				ak: a.key,
+				bk: b.key,
+				life: 0,
+				max: LINK_LIFE_MIN + ((Math.random() * (LINK_LIFE_MAX - LINK_LIFE_MIN)) | 0),
+			});
+		}
+	}
+
+	function drawLinks(list) {
+		const byKey = new Map(list.map((t) => [t.key, t]));
+		ctx.save();
+		ctx.lineWidth = 1;
+		ctx.lineCap = 'square';
+		ctx.lineJoin = 'miter';
+		for (const L of links) {
+			const a = byKey.get(L.ak);
+			const b = byKey.get(L.bk);
+			if (!a || !b) continue;
+			const ca = centerOf(a);
+			const cb = centerOf(b);
+			const u = L.life / L.max;
+			const envelope = Math.sin(u * Math.PI);
+			const fade = (a.miss || b.miss ? 0.35 : 1) * (0.35 + 0.65 * envelope);
+			ctx.strokeStyle = lineRgba(fade);
+			ctx.beginPath();
+			ctx.moveTo(ca.x, ca.y);
+			ctx.lineTo(cb.x, cb.y);
+			ctx.stroke();
+		}
+		ctx.restore();
+	}
+
 	function drawWindows(w, h) {
 		const list = [...windows.values()].sort((a, b) => b.w * b.h - a.w * a.h);
+		tickLinks(list);
+		drawLinks(list);
 		ctx.save();
 		ctx.lineJoin = 'miter';
 		ctx.lineCap = 'square';
@@ -555,12 +640,9 @@ export async function initOverseers({ canvas, video, errorEl }) {
 			ctx.restore();
 
 			ctx.globalAlpha = fade;
-			ctx.strokeStyle = '#000';
-			ctx.lineWidth = 3;
-			ctx.strokeRect(x, y, bw, bh);
-			ctx.strokeStyle = '#e8e8e8';
-			ctx.lineWidth = 2;
-			ctx.strokeRect(x, y, bw, bh);
+			ctx.strokeStyle = lineRgba(1);
+			ctx.lineWidth = 1;
+			ctx.strokeRect(x + 0.5, y + 0.5, bw - 1, bh - 1);
 
 			const label = t.code;
 			const tw = ctx.measureText(label).width;
@@ -571,7 +653,7 @@ export async function initOverseers({ canvas, video, errorEl }) {
 			if (ly < 8) ly = y + bh;
 			ctx.fillStyle = '#000';
 			ctx.fillRect(x, ly, barW, lh);
-			ctx.strokeStyle = '#e8e8e8';
+			ctx.strokeStyle = lineRgba(1);
 			ctx.lineWidth = 1;
 			ctx.strokeRect(x + 0.5, ly + 0.5, barW - 1, lh - 1);
 			ctx.fillStyle = '#e8e8e8';

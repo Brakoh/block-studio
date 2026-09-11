@@ -141,7 +141,7 @@ Font: `Inter` (corpo), `Space Mono` (coordinate / UI).
 ### Pagina OVERSEERS (`/overseers`)
 - Pagina autonoma, aperta dal tasto **OVERSEERS** su GLOBE (`#globe-tag-overseers`) → `/overseers`.
 - Return in alto a sinistra (stesso posto di GLOBE) e tasto **Escape** tornano a `/globe`.
-- Scena canvas `#overseers-scene`: prima il tracking sul video pulito (MediaPipe Pose, Face, Hands), poi il Feed CCTV a pieno schermo — scala di grigi, celle da 4px, scanline, stutter veloce da vertical sync. I Blob sono finestre visibili agganciate a molte parti della persona (testa, occhi, vestiti, accessori, dita): dentro c’è un ritaglio del Feed sfasato rispetto al video sotto, sopra un codice estetico tipo `B4-2C`.
+- Scena canvas `#overseers-scene`: prima il tracking sul video pulito (MediaPipe Pose, Face, Hands), poi il Feed CCTV a pieno schermo — scala di grigi, celle da 4px, scanline, stutter veloce da vertical sync. I Blob sono finestre visibili agganciate a molte parti della persona (testa, occhi, vestiti, accessori, dita): bordo 1px verde, ritaglio del Feed sfasato, codice estetico tipo `B4-2C`, linee rette 1px verdi che si riannodano in continuazione tra le finestre.
 - Webcam specchiata, copre lo schermo. Se la camera manca: `CAMERA UNAVAILABLE`. Nessun riquadro Live, nessun altro overlay HUD oltre al chrome dello studio.
 
 ### Pagina WASTE (`/waste`)
