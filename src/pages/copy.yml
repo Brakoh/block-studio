@@ -76,6 +76,18 @@ home:
 globe:
   return: Return
   tags:
-    meme: MEME
+    loudness: LOUDNESS
     dr_strange: DR_STRANGE
-    depth: COMPOSER
+    waste: WASTE
+
+waste:
+  camera_unavailable: CAMERA UNAVAILABLE
+  hoarding: COMING SOON
+  inscriptions:
+    sector: SECTOR Q
+    basin: BASIN 3
+    plinth: "PLINTH: VACANT"
+    elevation: "ELEVATION — 0M — DRY"
+
+loudness:
+  traffic: TRAFFIC

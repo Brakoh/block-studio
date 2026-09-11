@@ -8,7 +8,7 @@ function setCursorCoords(crosshair, crosshairCoord, x, y) {
     crosshairCoord.textContent = `${lat}° N, ${lng}° W`;
 }
 
-export function initStudioUI({ magnet = true, parkCursor = false } = {}) {
+export function initStudioUI({ magnet = true, parkCursor = false, line = true, pinnedHitbox = null } = {}) {
     const crosshair = document.getElementById('crosshair');
     const crosshairCoord = document.getElementById('crosshair-coord');
     const anchorCanvas = document.getElementById('anchor-line');
@@ -82,7 +82,7 @@ export function initStudioUI({ magnet = true, parkCursor = false } = {}) {
     if (parkCursor) {
         placeCursor(window.innerWidth / 2, window.innerHeight / 2);
     }
-    if (magnet) requestAnchorDraw();
+    if (magnet || pinnedHitbox) requestAnchorDraw();
 
     document.addEventListener('mousemove', (e) => {
         if (shouldHoldCenter()) return;
@@ -97,11 +97,81 @@ export function initStudioUI({ magnet = true, parkCursor = false } = {}) {
 
     window.addEventListener('scroll', () => {
         updateAnchorPositions();
-        if (magnet) requestAnchorDraw();
+        if (magnet || pinnedHitbox) requestAnchorDraw();
     }, { passive: true });
 
     function pointInA(a, x, y) {
         return a.w > 0 && x >= a.l && x <= a.r && y >= a.t && y <= a.b;
+    }
+
+    function boxFromEl(el) {
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        if (r.width <= 0 || r.height <= 0) return null;
+        return {
+            el,
+            l: r.left,
+            t: r.top,
+            r: r.right,
+            b: r.bottom,
+            w: r.width,
+            h: r.height,
+            x: r.left + r.width / 2,
+            y: r.top + r.height / 2,
+        };
+    }
+
+    function drawHitbox(box, pulse) {
+        const pad = 6;
+        const ox = box.l - pad;
+        const oy = box.t - pad;
+        const w = box.w + pad * 2;
+        const h = box.h + pad * 2;
+        anchorCtx.strokeStyle = `rgba(255,255,255,${(0.22 + 0.1 * pulse).toFixed(3)})`;
+        anchorCtx.lineWidth = 1;
+        anchorCtx.strokeRect(ox, oy, w, h);
+        const c = 9;
+        anchorCtx.strokeStyle = `rgba(255,255,255,${(0.4 + 0.18 * pulse).toFixed(3)})`;
+        [[ox, oy, 1, 1], [ox + w, oy, -1, 1], [ox, oy + h, 1, -1], [ox + w, oy + h, -1, -1]].forEach(([x, y, dx2, dy2]) => {
+            anchorCtx.beginPath();
+            anchorCtx.moveTo(x + c * dx2, y);
+            anchorCtx.lineTo(x, y);
+            anchorCtx.lineTo(x, y + c * dy2);
+            anchorCtx.stroke();
+        });
+        return { ox, oy, w, h };
+    }
+
+    function drawLineTo(tgt) {
+        const targetX = tgt.x;
+        const targetY = tgt.y;
+        const dx = targetX - lineX;
+        const dy = targetY - lineY;
+        const jerk = 0.16;
+        lineX += dx * jerk;
+        lineY += dy * jerk;
+
+        const cx = (lineX + targetX) / 2 + (lineY - targetY) * 0.28;
+        const cy = (lineY + targetY) / 2 - (lineX - targetX) * 0.28;
+        const { ox, oy, w, h } = {
+            ox: tgt.l - 6,
+            oy: tgt.t - 6,
+            w: tgt.w + 12,
+            h: tgt.h + 12,
+        };
+
+        anchorCtx.save();
+        anchorCtx.beginPath();
+        anchorCtx.rect(0, 0, window.innerWidth, window.innerHeight);
+        anchorCtx.rect(ox, oy, w, h);
+        anchorCtx.clip('evenodd');
+        anchorCtx.strokeStyle = 'rgba(255,255,255,0.35)';
+        anchorCtx.lineWidth = 1;
+        anchorCtx.beginPath();
+        anchorCtx.moveTo(cMouseX, cMouseY);
+        anchorCtx.quadraticCurveTo(cx, cy, targetX, targetY);
+        anchorCtx.stroke();
+        anchorCtx.restore();
     }
 
     function anchorDraw() {
@@ -138,63 +208,64 @@ export function initStudioUI({ magnet = true, parkCursor = false } = {}) {
             lastHovering = hovering;
         }
 
+        const pinned = pinnedHitbox ? boxFromEl(document.querySelector(pinnedHitbox)) : null;
         const tgt = targetCurrent;
-        if (tgt) {
-            const targetX = tgt.x;
-            const targetY = tgt.y;
-            const dx = targetX - lineX;
-            const dy = targetY - lineY;
-            const jerk = 0.16;
-            lineX += dx * jerk;
-            lineY += dy * jerk;
+        const boxes = [];
+        if (pinned) boxes.push(pinned);
+        if (tgt && tgt.el !== pinned?.el && !pinned?.el?.contains(tgt.el)) boxes.push(tgt);
 
-            const cx = (lineX + targetX) / 2 + (lineY - targetY) * 0.28;
-            const cy = (lineY + targetY) / 2 - (lineX - targetX) * 0.28;
-
-            const pad = 6;
-            const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 400);
-            const ox = tgt.l - pad, oy = tgt.t - pad;
-            const w = tgt.w + pad * 2, h = tgt.h + pad * 2;
-
-            anchorCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-            canvasHasLine = true;
-            anchorCtx.save();
-            anchorCtx.beginPath();
-            anchorCtx.rect(0, 0, window.innerWidth, window.innerHeight);
-            anchorCtx.rect(ox, oy, w, h);
-            anchorCtx.clip('evenodd');
-
-            anchorCtx.strokeStyle = 'rgba(255,255,255,0.35)';
-            anchorCtx.lineWidth = 1;
-            anchorCtx.beginPath();
-            anchorCtx.moveTo(cMouseX, cMouseY);
-            anchorCtx.quadraticCurveTo(cx, cy, targetX, targetY);
-            anchorCtx.stroke();
-            anchorCtx.restore();
-
-            anchorCtx.strokeStyle = `rgba(255,255,255,${(0.22 + 0.1 * pulse).toFixed(3)})`;
-            anchorCtx.lineWidth = 1;
-            anchorCtx.strokeRect(ox, oy, w, h);
-
-            const c = 9;
-            anchorCtx.strokeStyle = `rgba(255,255,255,${(0.4 + 0.18 * pulse).toFixed(3)})`;
-            [[ox, oy, 1, 1], [ox + w, oy, -1, 1], [ox, oy + h, 1, -1], [ox + w, oy + h, -1, -1]].forEach(([x, y, dx2, dy2]) => {
-                anchorCtx.beginPath();
-                anchorCtx.moveTo(x + c * dx2, y);
-                anchorCtx.lineTo(x, y);
-                anchorCtx.lineTo(x, y + c * dy2);
-                anchorCtx.stroke();
-            });
-            requestAnchorDraw();
-        } else {
+        if (!boxes.length && !tgt) {
             lineX = cMouseX;
             lineY = cMouseY;
             if (canvasHasLine) {
                 anchorCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
                 canvasHasLine = false;
             }
+            return;
         }
+
+        const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 400);
+        anchorCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+        canvasHasLine = true;
+
+        if (line && tgt) drawLineTo(tgt);
+        else {
+            lineX = cMouseX;
+            lineY = cMouseY;
+        }
+
+        for (const box of boxes) drawHitbox(box, pulse);
+        requestAnchorDraw();
     }
+}
+
+export function initScrollReveal() {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const nodes = [...document.querySelectorAll('.reveal')];
+    if (!nodes.length) return;
+
+    const byParent = new Map();
+    for (const el of nodes) {
+        const parent = el.parentElement;
+        if (!byParent.has(parent)) byParent.set(parent, []);
+        byParent.get(parent).push(el);
+    }
+    for (const group of byParent.values()) {
+        group.forEach((el, i) => {
+            el.style.setProperty('--reveal-delay', `${i * 90}ms`);
+        });
+    }
+
+    const io = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+            if (!entry.isIntersecting) continue;
+            entry.target.classList.add('is-in');
+            io.unobserve(entry.target);
+        }
+    }, { threshold: 0.14, rootMargin: '0px 0px -12% 0px' });
+
+    for (const el of nodes) io.observe(el);
 }
 
 export function startUtcClock(el) {

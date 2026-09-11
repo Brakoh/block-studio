@@ -57,10 +57,23 @@ export type Copy = {
 	globe: {
 		return: string;
 		tags: {
-			meme: string;
+			loudness: string;
 			dr_strange: string;
-			depth: string;
+			waste: string;
 		};
+	};
+	waste: {
+		camera_unavailable: string;
+		hoarding: string;
+		inscriptions: {
+			sector: string;
+			basin: string;
+			plinth: string;
+			elevation: string;
+		};
+	};
+	loudness: {
+		traffic: string;
 	};
 };
 

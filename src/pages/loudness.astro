@@ -1,0 +1,41 @@
+---
+import StudioLayout from '../layouts/StudioLayout.astro';
+import '../styles/globe.css';
+import '../styles/loudness.css';
+import { copy } from '../lib/copy';
+---
+
+<StudioLayout page="loudness">
+	<div class="loudness-veil" aria-hidden="true"></div>
+	<div class="loudness-left">
+		<button class="globe-return" id="globe-return">{copy.globe.return}</button>
+		<label class="loudness-density" for="loudness-density">
+			<span>{copy.loudness.traffic}</span>
+			<span class="loudness-density-track">
+				<input id="loudness-density" type="range" min="0" max="100" value="0" aria-label={copy.loudness.traffic} />
+			</span>
+		</label>
+	</div>
+	<canvas id="loudness-scene"></canvas>
+
+	<script>
+		import { initStudioUI } from '../scripts/studio-ui.js';
+		import { withBase } from '../lib/base';
+		import { initLoudness } from '../scripts/loudness-scene.js';
+
+		initStudioUI({ magnet: false, line: false, pinnedHitbox: '.loudness-density-track' });
+
+		function goGlobe() {
+			location.href = withBase('globe');
+		}
+		document.getElementById('globe-return')?.addEventListener('click', goGlobe);
+		document.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape') goGlobe();
+		});
+
+		initLoudness({
+			canvas: document.getElementById('loudness-scene'),
+			density: document.getElementById('loudness-density'),
+		});
+	</script>
+</StudioLayout>

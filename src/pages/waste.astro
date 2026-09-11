@@ -1,0 +1,45 @@
+---
+import StudioLayout from '../layouts/StudioLayout.astro';
+import '../styles/waste.css';
+import { copy } from '../lib/copy';
+---
+
+<StudioLayout page="waste">
+	<button class="globe-return" id="globe-return">{copy.globe.return}</button>
+
+	<div id="waste-live">
+		<video id="waste-live-video" playsinline webkit-playsinline muted autoplay></video>
+		<div id="waste-cam-error">{copy.waste.camera_unavailable}</div>
+	</div>
+
+	<canvas id="waste-scene" data-hoarding={copy.waste.hoarding}></canvas>
+
+	<p class="waste-inscribe sector">{copy.waste.inscriptions.sector}</p>
+	<p class="waste-inscribe basin">{copy.waste.inscriptions.basin}</p>
+	<p class="waste-inscribe plinth">{copy.waste.inscriptions.plinth}</p>
+	<p class="waste-inscribe elevation">{copy.waste.inscriptions.elevation}</p>
+
+	<script>
+		import { initStudioUI } from '../scripts/studio-ui.js';
+		import { withBase } from '../lib/base';
+		import { initWaste } from '../scripts/waste-scene.js';
+
+		initStudioUI({ magnet: true });
+
+		function goGlobe() {
+			location.href = withBase('globe');
+		}
+		document.getElementById('globe-return')?.addEventListener('click', goGlobe);
+		document.addEventListener('keydown', (e) => {
+			if (e.key === 'Escape') goGlobe();
+		});
+
+		const scene = document.getElementById('waste-scene');
+		initWaste({
+			canvas: scene,
+			video: document.getElementById('waste-live-video'),
+			errorEl: document.getElementById('waste-cam-error'),
+			hoarding: scene?.dataset.hoarding ?? '',
+		});
+	</script>
+</StudioLayout>

@@ -36,7 +36,9 @@ body[data-page="home"] {
 }
 
 body[data-page="globe"],
-body[data-page="strange"] {
+body[data-page="strange"],
+body[data-page="waste"],
+body[data-page="loudness"] {
     min-height: 100vh;
     overflow: hidden;
 }
@@ -168,7 +170,9 @@ nav {
     transform: translate(-50%, -50%);
 }
 
-body[data-page="globe"] .crosshair {
+body[data-page="globe"] .crosshair,
+body[data-page="waste"] .crosshair,
+body[data-page="loudness"] .crosshair {
     opacity: 1;
 }
 

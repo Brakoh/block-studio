@@ -312,6 +312,42 @@ footer span {
     text-transform: uppercase;
 }
 
+html.js .reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition:
+        opacity 0.75s cubic-bezier(0.45, 0, 0.55, 1),
+        transform 0.75s cubic-bezier(0.45, 0, 0.55, 1);
+    transition-delay: var(--reveal-delay, 0ms);
+}
+
+html.js .reveal.is-in {
+    opacity: 1;
+    transform: none;
+}
+
+html.js .hero h1.reveal {
+    transition:
+        opacity 0.75s cubic-bezier(0.45, 0, 0.55, 1),
+        transform 0.75s cubic-bezier(0.45, 0, 0.55, 1),
+        letter-spacing 0.5s ease,
+        color 0.5s ease;
+    transition-delay: var(--reveal-delay, 0ms);
+}
+
+html.js .project-item.reveal.is-in:hover {
+    opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html.js .reveal,
+    html.js .hero h1.reveal {
+        opacity: 1;
+        transform: none;
+        transition: none;
+    }
+}
+
 @media (max-width: 768px) {
     .hero { padding: 0 24px; }
     section { padding: 80px 24px; }

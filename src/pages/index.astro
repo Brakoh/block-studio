@@ -30,20 +30,20 @@ const { home } = copy;
 
 	<section class="hero">
 		<div class="hero-grid">
-			<h1>{copy.identity.word}<span class="square-dot"></span></h1>
-			<span class="hero-sub">{home.hero.location}</span>
-			<div class="hero-coord">
+			<h1 class="reveal">{copy.identity.word}<span class="square-dot"></span></h1>
+			<span class="hero-sub reveal">{home.hero.location}</span>
+			<div class="hero-coord reveal">
 				{home.hero.coord}
 			</div>
 		</div>
 	</section>
 
-	<div class="coord-divider">
+	<div class="coord-divider reveal">
 		<span>{home.dividers[0]}</span>
 	</div>
 
 	<section id="about">
-		<div class="section-header">
+		<div class="section-header reveal">
 			<div class="section-label">{home.about.label}</div>
 			<div class="section-number">{home.about.number}</div>
 		</div>
@@ -52,13 +52,13 @@ const { home } = copy;
 				{home.about.paragraphs.map((paragraph, i) => (
 					<>
 						{i > 0 && <br />}
-						<p>{paragraph}</p>
+						<p class="reveal">{paragraph}</p>
 					</>
 				))}
 			</div>
 			<div class="about-coords">
 				{home.about.facts.map((fact) => (
-					<div class="coord-block">
+					<div class="coord-block reveal">
 						<span class="coord-label">{fact.label}</span>
 						<span class="coord-value">{fact.value}</span>
 					</div>
@@ -67,18 +67,18 @@ const { home } = copy;
 		</div>
 	</section>
 
-	<div class="coord-divider">
+	<div class="coord-divider reveal">
 		<span>{home.dividers[1]}</span>
 	</div>
 
 	<section id="work">
-		<div class="section-header">
+		<div class="section-header reveal">
 			<div class="section-label">{home.work.label}</div>
 			<div class="section-number">{home.work.number}</div>
 		</div>
 		<div class="projects-list">
 			{projects.map((project) => (
-				<a href={project.data.url} class="project-item">
+				<a href={project.data.url} class="project-item reveal">
 					<span class="project-index">{projectIndex(project.id)}</span>
 					<div class="project-info">
 						<h3>{project.data.title}</h3>
@@ -90,21 +90,21 @@ const { home } = copy;
 		</div>
 	</section>
 
-	<div class="coord-divider">
+	<div class="coord-divider reveal">
 		<span>{home.dividers[2]}</span>
 	</div>
 
 	<section id="contact">
-		<div class="section-header">
+		<div class="section-header reveal">
 			<div class="section-label">{home.contact.label}</div>
 			<div class="section-number">{home.contact.number}</div>
 		</div>
 		<div class="contact-content">
-			<h2 class="section-title">{home.contact.title[0]}<br /><span>{home.contact.title[1]}</span></h2>
-			<a href={`mailto:${copy.identity.email}`} class="contact-email">{copy.identity.email}</a>
+			<h2 class="section-title reveal">{home.contact.title[0]}<br /><span>{home.contact.title[1]}</span></h2>
+			<a href={`mailto:${copy.identity.email}`} class="contact-email reveal">{copy.identity.email}</a>
 			<div class="contact-coords">
 				{home.contact.places.map((place) => (
-					<div class="contact-coord-item">
+					<div class="contact-coord-item reveal">
 						<div class="label">{place.label}</div>
 						<div class="value">{place.value}</div>
 					</div>
@@ -114,17 +114,18 @@ const { home } = copy;
 	</section>
 
 	<footer>
-		<span>{home.footer.copyright}</span>
-		<span>{home.footer.coord}</span>
+		<span class="reveal">{home.footer.copyright}</span>
+		<span class="reveal">{home.footer.coord}</span>
 	</footer>
 
 	<script>
-		import { initStudioUI, startUtcClock, resetHomeScroll } from '../scripts/studio-ui.js';
+		import { initStudioUI, startUtcClock, resetHomeScroll, initScrollReveal } from '../scripts/studio-ui.js';
 		import { withBase } from '../lib/base';
 
 		resetHomeScroll();
 		initStudioUI({ magnet: true });
 		startUtcClock(document.getElementById('nav-time'));
+		initScrollReveal();
 
 		document.querySelector('.hero h1')?.addEventListener('click', () => {
 			location.href = withBase('globe');

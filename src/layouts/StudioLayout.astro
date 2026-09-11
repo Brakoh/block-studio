@@ -4,7 +4,7 @@ import { copy } from '../lib/copy';
 import { withBase } from '../lib/base';
 
 interface Props {
-	page: 'home' | 'globe' | 'strange';
+	page: 'home' | 'globe' | 'strange' | 'waste' | 'loudness';
 }
 
 const { page } = Astro.props;
@@ -19,6 +19,9 @@ const corners = copy.chrome.corners;
 		<link rel="icon" type="image/svg+xml" href={withBase('favicon.svg')} />
 		<meta name="generator" content={Astro.generator} />
 		<title>{copy.window_title}</title>
+		{page === 'home' && (
+			<script is:inline>document.documentElement.classList.add('js');</script>
+		)}
 		{page === 'globe' && (
 			<script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
 		)}
