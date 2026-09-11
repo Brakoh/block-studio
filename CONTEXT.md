@@ -81,5 +81,5 @@ Su OVERSEERS, il rettangolo unico i cui quattro poli sono pollice e indice di ci
 _Avoid_: pinch UI, gesture tutorial, bounding box delle mani
 
 **Maschera**:
-Dentro la Cornice: campo nero a opacità 75% con outline verde. Il CCTV 3D è ancorato al volto, non alla maschera; la lente guarda dove guarda la faccia. Corpo in plastica bianca con graffi grigi, lente nera lucida, luce fissa nello spazio. Fuori tutto resta Feed e Blob.
+Dentro la Cornice: campo nero a opacità 75% con outline verde. Il CCTV 3D è ancorato al volto, non alla maschera; la lente guarda dove guarda la faccia. Corpo in plastica bianca con graffi grigi, lente nera lucida, luce fissa nello spazio. Un tubo pende dal basso e tre cavi scendono da sopra fino al retro; tubo e cavi dondolano con il movimento della testa. Fuori tutto resta Feed e Blob.
 _Avoid_: AR overlay, green screen, HUD extra

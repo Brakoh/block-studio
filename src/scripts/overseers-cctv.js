@@ -3,6 +3,13 @@ import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import cctvUrl from '../../assets/3d/cctv.fbx?url';
 
 const HEAD_FOLLOW = 0.16;
+const CABLE_GRAVITY = -26;
+const CABLE_DAMP = 0.986;
+const CABLE_ITERS = 5;
+const TUBE_LEN = 0.34;
+const TUBE_RADIUS = 0.024;
+const CABLE_RADIUS = 0.013;
+const CABLE_SLACK = 1.26;
 
 function makeScratchMaps() {
 	const size = 512;
@@ -129,6 +136,120 @@ function isLens(obj) {
 	return /glass|lens/.test(label);
 }
 
+const Y_AXIS = new THREE.Vector3(0, 1, 0);
+const _dir = new THREE.Vector3();
+const _mid = new THREE.Vector3();
+const _world = new THREE.Vector3();
+
+function makePt(x, y, z) {
+	return { x, y, z, px: x, py: y, pz: z };
+}
+
+function pinPt(p, v) {
+	p.x = p.px = v.x;
+	p.y = p.py = v.y;
+	p.z = p.pz = v.z;
+}
+
+function stepVerlet(pts, pinned, dt, gravity, damp) {
+	const g = gravity * dt * dt;
+	for (let i = 0; i < pts.length; i++) {
+		if (pinned[i]) continue;
+		const p = pts[i];
+		const vx = (p.x - p.px) * damp;
+		const vy = (p.y - p.py) * damp;
+		const vz = (p.z - p.pz) * damp;
+		p.px = p.x;
+		p.py = p.y;
+		p.pz = p.z;
+		p.x += vx;
+		p.y += vy + g;
+		p.z += vz;
+	}
+}
+
+function keepLength(a, b, rest, pinA, pinB) {
+	let dx = b.x - a.x;
+	let dy = b.y - a.y;
+	let dz = b.z - a.z;
+	const d = Math.hypot(dx, dy, dz) || 1e-4;
+	const corr = (d - rest) / d;
+	if (pinA && pinB) return;
+	if (pinA) {
+		b.x -= dx * corr;
+		b.y -= dy * corr;
+		b.z -= dz * corr;
+		return;
+	}
+	if (pinB) {
+		a.x += dx * corr;
+		a.y += dy * corr;
+		a.z += dz * corr;
+		return;
+	}
+	dx *= corr * 0.5;
+	dy *= corr * 0.5;
+	dz *= corr * 0.5;
+	a.x += dx;
+	a.y += dy;
+	a.z += dz;
+	b.x -= dx;
+	b.y -= dy;
+	b.z -= dz;
+}
+
+function placeSeg(mesh, a, b, radius) {
+	_dir.set(b.x - a.x, b.y - a.y, b.z - a.z);
+	const len = _dir.length();
+	if (len < 1e-4) {
+		mesh.visible = false;
+		return;
+	}
+	mesh.visible = true;
+	_mid.set((a.x + b.x) * 0.5, (a.y + b.y) * 0.5, (a.z + b.z) * 0.5);
+	mesh.position.copy(_mid);
+	_dir.multiplyScalar(1 / len);
+	mesh.quaternion.setFromUnitVectors(Y_AXIS, _dir);
+	mesh.scale.set(radius, len, radius);
+}
+
+function makeChain(n, start, end, scene, geo, mat, radius, sag = 0, pinEnd = true) {
+	const pts = [];
+	const segs = [];
+	const pinned = new Array(n).fill(false);
+	pinned[0] = true;
+	if (pinEnd) pinned[n - 1] = true;
+	for (let i = 0; i < n; i++) {
+		const t = n === 1 ? 0 : i / (n - 1);
+		const x = start.x + (end.x - start.x) * t;
+		const y = start.y + (end.y - start.y) * t - sag * Math.sin(Math.PI * t);
+		const z = start.z + (end.z - start.z) * t;
+		pts.push(makePt(x, y, z));
+	}
+	for (let i = 0; i < n - 1; i++) {
+		const mesh = new THREE.Mesh(geo, mat);
+		mesh.frustumCulled = false;
+		scene.add(mesh);
+		segs.push(mesh);
+	}
+	const rest =
+		Math.hypot(end.x - start.x, end.y - start.y, end.z - start.z) / Math.max(1, n - 1);
+	return { pts, segs, pinned, rest: rest || 0.08, radius };
+}
+
+function stepChain(chain, dt, gravity, damp, iters) {
+	stepVerlet(chain.pts, chain.pinned, dt, gravity, damp);
+	const { pts, pinned, rest } = chain;
+	for (let k = 0; k < iters; k++) {
+		for (let i = 0; i < pts.length - 1; i++) {
+			keepLength(pts[i], pts[i + 1], rest, pinned[i], pinned[i + 1]);
+		}
+	}
+	for (let i = 0; i < chain.segs.length; i++) {
+		placeSeg(chain.segs[i], pts[i], pts[i + 1], chain.radius);
+	}
+}
+
 export function createCctvMask(signal) {
 	const canvas = document.createElement('canvas');
 	const renderer = new THREE.WebGLRenderer({
@@ -149,8 +270,8 @@ export function createCctvMask(signal) {
 	scene.environment = envMap;
 
 	const camera = new THREE.PerspectiveCamera(28, 1, 0.05, 40);
-	camera.position.set(0, 0.12, 4.2);
-	camera.lookAt(0, 0, 0);
+	camera.position.set(0, 0.04, 5.2);
+	camera.lookAt(0, -0.16, 0);
 
 	scene.add(new THREE.AmbientLight(0x2a2a2a, 0.16));
 	const key = new THREE.DirectionalLight(0xf2f2f2, 2.55);
@@ -187,6 +308,18 @@ export function createCctvMask(signal) {
 		metalness: 0.72,
 		envMapIntensity: 0.8,
 	});
+	const hoseMat = new THREE.MeshStandardMaterial({
+		color: 0x3d3d3d,
+		roughness: 0.94,
+		metalness: 0.06,
+	});
+	const cableMat = new THREE.MeshStandardMaterial({
+		color: 0x161616,
+		roughness: 0.72,
+		metalness: 0.28,
+	});
+	const hoseGeo = new THREE.CylinderGeometry(1, 1, 1, 7);
+	const cableGeo = new THREE.CylinderGeometry(1, 1, 1, 6);
 
 	const targetQ = new THREE.Quaternion();
 	const scratchM = new THREE.Matrix4();
@@ -194,6 +327,88 @@ export function createCctvMask(signal) {
 	const scratchE = new THREE.Euler(0, 0, 0, 'YXZ');
 
 	let loaded = false;
+	let lastT = 0;
+	const bottomAnchor = new THREE.Object3D();
+	const stubAnchor = new THREE.Object3D();
+	const backAnchors = [new THREE.Object3D(), new THREE.Object3D(), new THREE.Object3D()];
+	const ceilings = [
+		new THREE.Vector3(0.08, 1.36, -0.16),
+		new THREE.Vector3(-0.06, 1.42, -0.08),
+		new THREE.Vector3(0.03, 1.48, -0.24),
+	];
+	let tube = null;
+	const cables = [];
+
+	function findMesh(root, name) {
+		let found = null;
+		root.traverse((obj) => {
+			if (obj.isMesh && obj.name === name) found = obj;
+		});
+		return found;
+	}
+
+	function rigOnBody(body) {
+		body.geometry.computeBoundingBox();
+		const b = body.geometry.boundingBox;
+		const xBack = b.min.x;
+		const yBot = b.min.y;
+		const yspan = Math.max(0.001, b.max.y - b.min.y);
+		const zmid = (b.min.z + b.max.z) * 0.5;
+		const zspan = b.max.z - b.min.z;
+		const zSide = zmid + zspan * 0.4;
+		bottomAnchor.position.set(xBack, yBot + yspan * 0.04, zSide);
+		stubAnchor.position.set(xBack - yspan * 0.7, yBot - yspan * 0.1, zSide);
+		body.add(bottomAnchor);
+		body.add(stubAnchor);
+		const backs = [
+			[xBack, yBot + yspan * 0.82, zmid + zspan * 0.18],
+			[xBack, yBot + yspan * 0.62, zmid - zspan * 0.14],
+			[xBack, yBot + yspan * 0.44, zmid + zspan * 0.05],
+		];
+		backAnchors.forEach((node, i) => {
+			node.position.set(backs[i][0], backs[i][1], backs[i][2]);
+			body.add(node);
+		});
+		hold.updateMatrixWorld(true);
+		bottomAnchor.getWorldPosition(_world);
+		const mouth = _world.clone();
+		stubAnchor.getWorldPosition(_world);
+		const stub = _world.clone();
+		_dir.subVectors(stub, mouth);
+		if (_dir.lengthSq() < 1e-6) _dir.set(0, 0, -1);
+		else _dir.normalize();
+		const hang = stub.clone().addScaledVector(_dir, 0.2);
+		hang.y -= TUBE_LEN;
+		tube = makeChain(12, mouth, hang, scene, hoseGeo, hoseMat, TUBE_RADIUS, 0.08, false);
+		tube.pinned[1] = true;
+		pinPt(tube.pts[0], mouth);
+		pinPt(tube.pts[1], stub);
+		for (let i = 2; i < tube.pts.length; i++) {
+			const t = (i - 1) / (tube.pts.length - 2);
+			tube.pts[i].x = stub.x + (hang.x - stub.x) * t + 0.05 * Math.sin(Math.PI * t);
+			tube.pts[i].y = stub.y + (hang.y - stub.y) * t;
+			tube.pts[i].z = stub.z + (hang.z - stub.z) * t;
+			tube.pts[i].px = tube.pts[i].x;
+			tube.pts[i].py = tube.pts[i].y;
+			tube.pts[i].pz = tube.pts[i].z;
+		}
+		tube.rest = TUBE_LEN / Math.max(1, tube.pts.length - 2);
+		backAnchors.forEach((node, i) => {
+			node.getWorldPosition(_world);
+			const chain = makeChain(
+				11,
+				ceilings[i],
+				_world.clone(),
+				scene,
+				cableGeo,
+				cableMat,
+				CABLE_RADIUS,
+				0.18,
+			);
+			chain.rest *= CABLE_SLACK;
+			cables.push({ chain, tail: node, ceiling: ceilings[i] });
+		});
+	}
 
 	new FBXLoader().load(
 		cctvUrl,
@@ -217,6 +432,8 @@ export function createCctvMask(signal) {
 			group.position.sub(center);
 			hold.scale.setScalar(1.72 / span);
 			hold.add(group);
+			const body = findMesh(group, 'Body_Base');
+			if (body) rigOnBody(body);
 			loaded = true;
 		},
 		undefined,
@@ -263,15 +480,44 @@ export function createCctvMask(signal) {
 	}
 
 	function render() {
+		const now = performance.now();
+		let dt = lastT ? (now - lastT) / 1000 : 1 / 60;
+		lastT = now;
+		if (dt > 0.04) dt = 0.04;
 		pivot.quaternion.slerp(targetQ, HEAD_FOLLOW);
+		pivot.updateMatrixWorld(true);
+		if (tube) {
+			bottomAnchor.getWorldPosition(_world);
+			pinPt(tube.pts[0], _world);
+			stubAnchor.getWorldPosition(_world);
+			pinPt(tube.pts[1], _world);
+			stepChain(tube, dt, CABLE_GRAVITY, CABLE_DAMP, CABLE_ITERS);
+		}
+		for (const { chain, tail, ceiling } of cables) {
+			pinPt(chain.pts[0], ceiling);
+			tail.getWorldPosition(_world);
+			pinPt(chain.pts[chain.pts.length - 1], _world);
+			stepChain(chain, dt, CABLE_GRAVITY, CABLE_DAMP, CABLE_ITERS);
+		}
 		renderer.render(scene, camera);
 	}
 
+	function dropChain(chain) {
+		if (!chain) return;
+		for (const mesh of chain.segs) scene.remove(mesh);
+	}
+
 	function dispose() {
+		dropChain(tube);
+		for (const { chain } of cables) dropChain(chain);
 		renderer.dispose();
 		hold.clear();
 		plastic.dispose();
 		lens.dispose();
+		hoseMat.dispose();
+		cableMat.dispose();
+		hoseGeo.dispose();
+		cableGeo.dispose();
 		scratches.map.dispose();
 		scratches.roughnessMap.dispose();
 		envMap.dispose();
