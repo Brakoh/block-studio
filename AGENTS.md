@@ -3,7 +3,6 @@
 ## Preferenze comunicazione
 - Sono italiano. **Rispondi sempre in italiano**, anche se il codice o i commenti tecnici sono in inglese.
 - **Prima di scrivere codice**, verifica se hai compreso le mie intenzioni. Se hai dubbi, fermati e **fammi domande**. Se è tutto chiaro, procedi direttamente alla scrittura del codice.
-- **Non sono un programmatore**: tu prendi le decisioni **tecniche** (linguaggi, librerie, architettura, implementazione). **Lascia a me** le decisioni di **prodotto e comportamento** (cosa deve fare, come deve apparire, flussi utente, scelte stilistiche).
 
 ---
 
