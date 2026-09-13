@@ -1,4 +1,11 @@
 const INTERACTIVE_SEL = 'a, button, input, select, textarea, [role="link"], .hero h1';
+const MOBILE_LAYOUT_MQ = '(max-width: 768px)';
+const TOUCH_PRIMARY_MQ = '(hover: none) and (pointer: coarse)';
+
+function isTouchChrome() {
+    return window.matchMedia(MOBILE_LAYOUT_MQ).matches
+        || window.matchMedia(TOUCH_PRIMARY_MQ).matches;
+}
 
 function setCursorCoords(crosshair, crosshairCoord, x, y) {
     crosshair.style.left = x + 'px';
@@ -17,6 +24,7 @@ export function initStudioUI({ magnet = true, parkCursor = false, line = true, p
 
     let parkedCursor = parkCursor;
     const parkUntil = performance.now() + 200;
+    let touchChrome = isTouchChrome();
     function shouldHoldCenter() {
         if (!parkedCursor) return false;
         if (performance.now() < parkUntil) return true;
@@ -31,8 +39,17 @@ export function initStudioUI({ magnet = true, parkCursor = false, line = true, p
         anchorCanvas.style.height = window.innerHeight + 'px';
         anchorCtx.setTransform(aDpr, 0, 0, aDpr, 0, 0);
     }
+    function clearAnchorCanvas() {
+        if (!anchorCtx) return;
+        anchorCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+        canvasHasLine = false;
+    }
+
     sizeAnchorCanvas();
-    window.addEventListener('resize', sizeAnchorCanvas);
+    window.addEventListener('resize', () => {
+        sizeAnchorCanvas();
+        syncTouchChrome();
+    });
 
     let anchorList = [];
     function collectInteractive() {
@@ -64,6 +81,7 @@ export function initStudioUI({ magnet = true, parkCursor = false, line = true, p
     let lastHovering = false;
 
     function requestAnchorDraw() {
+        if (touchChrome) return;
         if (!anchorRaf) anchorRaf = requestAnimationFrame(anchorDraw);
     }
 
@@ -79,12 +97,34 @@ export function initStudioUI({ magnet = true, parkCursor = false, line = true, p
         setCursorCoords(crosshair, crosshairCoord, x, y);
     }
 
+    function syncTouchChrome() {
+        const next = isTouchChrome();
+        if (next === touchChrome) return;
+        touchChrome = next;
+        if (touchChrome) {
+            if (anchorRaf) {
+                cancelAnimationFrame(anchorRaf);
+                anchorRaf = 0;
+            }
+            crosshair.classList.remove('active');
+            lastHovering = false;
+            targetCurrent = null;
+            clearAnchorCanvas();
+            return;
+        }
+        if (magnet || pinnedHitbox) requestAnchorDraw();
+    }
+
+    window.matchMedia(MOBILE_LAYOUT_MQ).addEventListener('change', syncTouchChrome);
+    window.matchMedia(TOUCH_PRIMARY_MQ).addEventListener('change', syncTouchChrome);
+
     if (parkCursor) {
         placeCursor(window.innerWidth / 2, window.innerHeight / 2);
     }
-    if (magnet || pinnedHitbox) requestAnchorDraw();
+    if (!touchChrome && (magnet || pinnedHitbox)) requestAnchorDraw();
 
     document.addEventListener('mousemove', (e) => {
+        if (touchChrome) return;
         if (shouldHoldCenter()) return;
         setCursorCoords(crosshair, crosshairCoord, e.clientX, e.clientY);
         if (parkedCursor) return;
@@ -176,6 +216,10 @@ export function initStudioUI({ magnet = true, parkCursor = false, line = true, p
 
     function anchorDraw() {
         anchorRaf = 0;
+        if (touchChrome) {
+            clearAnchorCanvas();
+            return;
+        }
         updateAnchorPositions();
 
         let best = null;
@@ -237,6 +281,65 @@ export function initStudioUI({ magnet = true, parkCursor = false, line = true, p
         for (const box of boxes) drawHitbox(box, pulse);
         requestAnchorDraw();
     }
+}
+
+export function initNavMenu() {
+    const nav = document.querySelector('nav');
+    const btn = document.getElementById('nav-menu-btn');
+    const links = document.getElementById('nav-links');
+    if (!nav || !btn || !links) return;
+
+    const layoutMq = window.matchMedia(MOBILE_LAYOUT_MQ);
+
+    function setOpen(open) {
+        nav.classList.toggle('is-open', open);
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        document.body.classList.toggle('nav-open', open);
+        if (layoutMq.matches) {
+            links.setAttribute('aria-hidden', open ? 'false' : 'true');
+        } else {
+            links.removeAttribute('aria-hidden');
+        }
+    }
+
+    if (layoutMq.matches) {
+        links.setAttribute('aria-hidden', 'true');
+    }
+
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setOpen(!nav.classList.contains('is-open'));
+    });
+
+    links.querySelectorAll('a').forEach((a) => {
+        a.addEventListener('click', (e) => {
+            const href = a.getAttribute('href');
+            setOpen(false);
+            if (!href || !href.startsWith('#')) return;
+            const target = document.querySelector(href);
+            if (!target) return;
+            e.preventDefault();
+            requestAnimationFrame(() => {
+                target.scrollIntoView({ behavior: 'smooth' });
+                history.pushState(null, '', href);
+            });
+        });
+    });
+
+    nav.addEventListener('click', (e) => {
+        if (e.target === nav) setOpen(false);
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') setOpen(false);
+    });
+
+    layoutMq.addEventListener('change', () => {
+        if (!layoutMq.matches) setOpen(false);
+        else if (!nav.classList.contains('is-open')) {
+            links.setAttribute('aria-hidden', 'true');
+        }
+    });
 }
 
 export function initScrollReveal() {

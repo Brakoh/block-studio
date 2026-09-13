@@ -20,7 +20,19 @@ const { home } = copy;
 <StudioLayout page="home">
 	<nav>
 		<div class="logo">{logo}</div>
-		<ul class="nav-links">
+		<button
+			type="button"
+			class="nav-menu-btn"
+			id="nav-menu-btn"
+			aria-expanded="false"
+			aria-controls="nav-links"
+			aria-label={home.nav.menu}
+		>
+			<span></span>
+			<span></span>
+			<span></span>
+		</button>
+		<ul class="nav-links" id="nav-links">
 			<li><a href="#about">{home.nav.about}</a></li>
 			<li><a href="#work">{home.nav.work}</a></li>
 			<li><a href="#contact">{home.nav.contact}</a></li>
@@ -119,13 +131,14 @@ const { home } = copy;
 	</footer>
 
 	<script>
-		import { initStudioUI, startUtcClock, resetHomeScroll, initScrollReveal } from '../scripts/studio-ui.js';
+		import { initStudioUI, startUtcClock, resetHomeScroll, initScrollReveal, initNavMenu } from '../scripts/studio-ui.js';
 		import { withBase } from '../lib/base';
 
 		resetHomeScroll();
 		initStudioUI({ magnet: true });
 		startUtcClock(document.getElementById('nav-time'));
 		initScrollReveal();
+		initNavMenu();
 
 		document.querySelector('.hero h1')?.addEventListener('click', () => {
 			location.href = withBase('globe');

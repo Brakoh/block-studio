@@ -29,6 +29,7 @@ home:
     about: About
     work: Work
     contact: Contact
+    menu: Menu
   hero:
     location: Explore the world
     coord: "51°30'26.4\"N   0°07'39.6\"W   —   Est. 2019   —   Design & Digital"

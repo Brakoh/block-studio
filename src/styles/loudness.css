@@ -136,3 +136,11 @@ body[data-page="loudness"] .corner-coord.tl {
         --loudness-track: min(42vh, calc(100vh - 220px));
     }
 }
+
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
+    .loudness-density input[type='range'],
+    .loudness-density input[type='range']::-webkit-slider-thumb,
+    .loudness-density input[type='range']::-moz-range-thumb {
+        cursor: auto !important;
+    }
+}
