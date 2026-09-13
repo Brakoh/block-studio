@@ -26,8 +26,60 @@
         };
 
         const FP = FACE_PARAMS;
+        const MOBILE_LAYOUT_MQ = '(max-width: 768px)';
+        const TOUCH_PRIMARY_MQ = '(hover: none) and (pointer: coarse)';
+        const DESKTOP_LOOK = { spacing: 0.048, pointR: 1.2, faceAlpha: 0.55, lineCount: 72 };
+        const MOBILE_LOOK = { spacing: 0.082, pointR: 1.8, faceAlpha: 0.98, lineCount: 36 };
+        const TILT_RANGE = 22;
+        const TILT_SWAY = 0.14;
+
         const facePts = [];
         const lines = [];
+        let mobileGlobe = false;
+        let tiltNX = 0;
+        let tiltNY = 0;
+        let tiltRest = null;
+        let tiltListening = false;
+
+        function isMobileGlobe() {
+            return window.matchMedia(MOBILE_LAYOUT_MQ).matches
+                || window.matchMedia(TOUCH_PRIMARY_MQ).matches;
+        }
+
+        function applyLook() {
+            mobileGlobe = isMobileGlobe();
+            Object.assign(FP, mobileGlobe ? MOBILE_LOOK : DESKTOP_LOOK);
+            pixelDensity(mobileGlobe ? Math.min(2, displayDensity()) : 1);
+            if (mobileGlobe) noSmooth();
+            else smooth();
+        }
+
+        function onDeviceTilt(e) {
+            if (e.gamma == null || e.beta == null) return;
+            if (!tiltRest) tiltRest = { g: e.gamma, b: e.beta };
+            tiltNX = Math.max(-1, Math.min(1, (e.gamma - tiltRest.g) / TILT_RANGE));
+            tiltNY = Math.max(-1, Math.min(1, (e.beta - tiltRest.b) / TILT_RANGE));
+        }
+
+        function startTilt() {
+            if (tiltListening || !mobileGlobe) return;
+            tiltListening = true;
+            window.addEventListener('orientationchange', () => { tiltRest = null; });
+            const listen = () => {
+                window.addEventListener('deviceorientation', onDeviceTilt, { passive: true });
+            };
+            const DOE = window.DeviceOrientationEvent;
+            if (DOE && typeof DOE.requestPermission === 'function') {
+                DOE.requestPermission()
+                    .then((state) => {
+                        if (state === 'granted') listen();
+                        else tiltListening = false;
+                    })
+                    .catch(() => { tiltListening = false; });
+            } else {
+                listen();
+            }
+        }
         const globeTags = [
             { el: document.getElementById('globe-tag-loudness'), anchor: { x: 0, y: 0, z: 0.35 }, label: 'D4' },
             { el: document.getElementById('globe-tag-overseers'), anchor: { x: 0, y: 0, z: 0.35 }, label: 'E3' },
@@ -213,7 +265,7 @@
         function setup() {
             const c = createCanvas(windowWidth, windowHeight, WEBGL);
             c.id('face-canvas');
-            pixelDensity(1);
+            applyLook();
             buildFace();
             noStroke();
             buildLabels();
@@ -221,6 +273,14 @@
             resetLines();
             loop();
             pickTagAnchor();
+            if (mobileGlobe) {
+                const DOE = window.DeviceOrientationEvent;
+                if (DOE && typeof DOE.requestPermission === 'function') {
+                    window.addEventListener('pointerdown', startTilt, { once: true });
+                } else {
+                    startTilt();
+                }
+            }
 
             labelEls.length = 0;
             for (const L of labelList) {
@@ -259,11 +319,12 @@
 
             const mx = (typeof cMouseX === 'number') ? cMouseX : width * 0.5;
             const my = (typeof cMouseY === 'number') ? cMouseY : height * 0.5;
-            const nx = (mx / width - 0.5) * 2;
-            const ny = (my / height - 0.5) * 2;
+            const nx = mobileGlobe ? tiltNX : (mx / width - 0.5) * 2;
+            const ny = mobileGlobe ? tiltNY : (my / height - 0.5) * 2;
+            const sway = mobileGlobe ? TILT_SWAY : FP.sway;
 
-            const targetRotY = homeRotY + nx * FP.sway;
-            const targetRotX = homeRotX - ny * FP.sway * 0.6;
+            const targetRotY = homeRotY + nx * sway;
+            const targetRotX = homeRotX - ny * sway * 0.6;
             rotY += (targetRotY - rotY) * FP.follow;
             rotX += (targetRotX - rotX) * FP.follow;
 
@@ -305,13 +366,27 @@
             }
             refillLines();
 
-            strokeWeight(FP.pointR * 2);
-            stroke(235, 235, 235, FP.faceAlpha * 255);
-            beginShape(POINTS);
-            for (const p of facePts) {
-                vertex(p.x * s, p.y * s, p.z * s);
+            if (mobileGlobe) {
+                noStroke();
+                fill(235, 235, 235, FP.faceAlpha * 255);
+                const pr = FP.pointR;
+                let x = 0, y = 0, z = 0;
+                for (const p of facePts) {
+                    const px = p.x * s, py = p.y * s, pz = p.z * s;
+                    translate(px - x, py - y, pz - z);
+                    box(pr);
+                    x = px; y = py; z = pz;
+                }
+                translate(-x, -y, -z);
+            } else {
+                strokeWeight(FP.pointR * 2);
+                stroke(235, 235, 235, FP.faceAlpha * 255);
+                beginShape(POINTS);
+                for (const p of facePts) {
+                    vertex(p.x * s, p.y * s, p.z * s);
+                }
+                endShape();
             }
-            endShape();
 
             pop();
 
@@ -347,6 +422,19 @@
         }
 
         function windowResized() {
+            const next = isMobileGlobe();
             resizeCanvas(windowWidth, windowHeight);
+            if (next === mobileGlobe) return;
+            applyLook();
+            buildFace();
+            resetLines();
+            if (mobileGlobe) {
+                const DOE = window.DeviceOrientationEvent;
+                if (DOE && typeof DOE.requestPermission === 'function') {
+                    window.addEventListener('pointerdown', startTilt, { once: true });
+                } else {
+                    startTilt();
+                }
+            }
         }
     

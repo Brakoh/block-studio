@@ -455,6 +455,19 @@ function buildCity(rng, budgets) {
 	const undirected = [];
 	for (let i = 0; i < directed.length; i += 2) undirected.push(directed[i]);
 
+	buildings.sort((a, b) => {
+		const da = distCore((a.x0 + a.x1) * 0.5, (a.z0 + a.z1) * 0.5);
+		const db = distCore((b.x0 + b.x1) * 0.5, (b.z0 + b.z1) * 0.5);
+		return da - db;
+	});
+	const kept = [];
+	for (const b of buildings) {
+		const d = distCore((b.x0 + b.x1) * 0.5, (b.z0 + b.z1) * 0.5);
+		if (d < 520 || rng() < (d < 900 ? 0.55 : 0.22)) kept.push(b);
+	}
+	for (const b of kept) scanBuilding(cloud, strokes, b, rng);
+
+	const roadStep = budgets.roadStep ?? 1.35;
 	for (const e of undirected) {
 		const dx = e.x1 - e.x0;
 		const dz = e.z1 - e.z0;
@@ -465,7 +478,7 @@ function buildCity(rng, budgets) {
 		const nz = ux;
 		const isBridge = inRiver((e.x0 + e.x1) * 0.5, (e.z0 + e.z1) * 0.5, 22);
 		const yRoad = isBridge ? 7.2 : 0.04;
-		const step = 1.35;
+		const step = roadStep;
 		for (let s = 0; s < e.len; s += step * (0.55 + rng() * 0.55)) {
 			const t = s / e.len;
 			const x = e.x0 + dx * t;
@@ -542,18 +555,6 @@ function buildCity(rng, budgets) {
 			}
 		}
 	}
-
-	buildings.sort((a, b) => {
-		const da = distCore((a.x0 + a.x1) * 0.5, (a.z0 + a.z1) * 0.5);
-		const db = distCore((b.x0 + b.x1) * 0.5, (b.z0 + b.z1) * 0.5);
-		return da - db;
-	});
-	const kept = [];
-	for (const b of buildings) {
-		const d = distCore((b.x0 + b.x1) * 0.5, (b.z0 + b.z1) * 0.5);
-		if (d < 520 || rng() < (d < 900 ? 0.55 : 0.22)) kept.push(b);
-	}
-	for (const b of kept) scanBuilding(cloud, strokes, b, rng);
 
 	return { cloud, strokes, directed, nodes };
 }
@@ -647,8 +648,8 @@ export function initLoudness({ canvas, density }) {
 	const stopAudio = initLoudnessAudio(density);
 	const mobile = window.matchMedia('(max-width: 768px)').matches;
 	const budgets = mobile
-		? { points: 320000, strokes: 36000, vehicles: 500, trails: 16 }
-		: { points: 1250000, strokes: 100000, vehicles: 5000, trails: 20 };
+		? { points: 560000, strokes: 52000, vehicles: 500, trails: 16, roadStep: 2.2 }
+		: { points: 1250000, strokes: 100000, vehicles: 5000, trails: 20, roadStep: 1.35 };
 
 	const rng = mulberry32(0x51e30d);
 	const city = buildCity(rng, budgets);
@@ -666,7 +667,13 @@ export function initLoudness({ canvas, density }) {
 	const scene = new THREE.Scene();
 	scene.background = new THREE.Color(0x000000);
 
-	const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 1.2, 2800);
+	const mobileMq = window.matchMedia('(max-width: 768px)');
+	const camera = new THREE.PerspectiveCamera(
+		mobileMq.matches ? 52 : 55,
+		window.innerWidth / window.innerHeight,
+		1.2,
+		2800,
+	);
 
 	const cityMat = pointMaterial(POINT_VERT, mobile ? 1.35 : 1.55);
 	const cityPts = new THREE.Points(city.cloud.geometry(), cityMat);
@@ -854,12 +861,15 @@ export function initLoudness({ canvas, density }) {
 	const look = new THREE.Vector3(40, 20, -20);
 	const camPos = new THREE.Vector3();
 	let azimuth = 0.62;
-	const elev = THREE.MathUtils.degToRad(39);
-	const radius = 305;
 
 	function placeCamera(t) {
-		const mx = ((window.cMouseX ?? window.innerWidth * 0.5) / window.innerWidth - 0.5) * 0.1;
-		const my = ((window.cMouseY ?? window.innerHeight * 0.5) / window.innerHeight - 0.5) * 0.04;
+		const m = mobileMq.matches;
+		if (m) look.set(0, 18, 0);
+		else look.set(40, 20, -20);
+		const radius = m ? 820 : 305;
+		const elev = THREE.MathUtils.degToRad(m ? 46 : 39);
+		const mx = m ? 0 : ((window.cMouseX ?? window.innerWidth * 0.5) / window.innerWidth - 0.5) * 0.1;
+		const my = m ? 0 : ((window.cMouseY ?? window.innerHeight * 0.5) / window.innerHeight - 0.5) * 0.04;
 		azimuth = 0.95 + t * 0.005 + mx;
 		const el = elev + my + Math.sin(t * 0.06) * 0.012;
 		camPos.set(
@@ -875,6 +885,7 @@ export function initLoudness({ canvas, density }) {
 	const mosh = createLoudnessMosh(renderer);
 
 	function onResize() {
+		camera.fov = mobileMq.matches ? 52 : 55;
 		camera.aspect = window.innerWidth / window.innerHeight;
 		camera.updateProjectionMatrix();
 		renderer.setSize(window.innerWidth, window.innerHeight, false);

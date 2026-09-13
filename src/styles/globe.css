@@ -97,3 +97,9 @@
     pointer-events: none;
     z-index: 9001;
 }
+
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
+    .coord-globe {
+        opacity: 0.75;
+    }
+}

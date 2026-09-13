@@ -22,7 +22,8 @@ const LAYERS = [
 ];
 
 export function initLoudnessAudio(density) {
-	const ctx = new AudioContext();
+	const AC = window.AudioContext || window.webkitAudioContext;
+	const ctx = new AC();
 	const masterGain = ctx.createGain();
 	masterGain.gain.value = 0;
 	masterGain.connect(ctx.destination);
@@ -31,8 +32,12 @@ export function initLoudnessAudio(density) {
 		const el = new Audio(spec.src);
 		el.loop = true;
 		el.preload = 'auto';
+		el.playsInline = true;
 		el.volume = 1;
 		el.controls = false;
+		el.crossOrigin = 'anonymous';
+		el.setAttribute('playsinline', '');
+		el.setAttribute('webkit-playsinline', '');
 		el.setAttribute('aria-hidden', 'true');
 		el.style.display = 'none';
 		el.setAttribute('data-loudness-layer', spec.id);
@@ -52,6 +57,12 @@ export function initLoudnessAudio(density) {
 		return density ? clamp(Number(density.value) / 100, 0, 1) : 0;
 	}
 
+	function startLayers() {
+		for (const layer of layers) {
+			if (layer.el.paused) layer.el.play().catch(() => {});
+		}
+	}
+
 	function apply() {
 		const t = sliderT();
 		const audible = !document.hidden;
@@ -63,11 +74,12 @@ export function initLoudnessAudio(density) {
 			const mix = ramp(t, layer.from, layer.to) * layer.gain;
 			layer.el.dataset.mix = String(mix);
 			layer.gainNode.gain.setTargetAtTime(mix, ctx.currentTime, 0.03);
-			const shouldPlay = unlocked && audible && master > 0.001 && mix > 0.001;
-			if (shouldPlay) {
-				if (layer.el.paused) layer.el.play().catch(() => {});
-			} else if (!layer.el.paused) {
-				layer.el.pause();
+		}
+
+		if (unlocked && audible) startLayers();
+		else {
+			for (const layer of layers) {
+				if (!layer.el.paused) layer.el.pause();
 			}
 		}
 	}
@@ -75,18 +87,28 @@ export function initLoudnessAudio(density) {
 	function unlock() {
 		if (ctx.state === 'suspended') ctx.resume().catch(() => {});
 		unlocked = true;
+		startLayers();
 		apply();
 	}
 
+	const unlockOpts = { capture: true, passive: true };
+	density?.addEventListener('pointerdown', unlock, unlockOpts);
+	density?.addEventListener('touchstart', unlock, unlockOpts);
 	density?.addEventListener('input', unlock);
-	window.addEventListener('pointerdown', unlock);
+	density?.addEventListener('change', unlock);
+	window.addEventListener('pointerdown', unlock, unlockOpts);
+	window.addEventListener('touchstart', unlock, unlockOpts);
 	window.addEventListener('keydown', unlock);
 	document.addEventListener('visibilitychange', apply);
 	apply();
 
 	return () => {
+		density?.removeEventListener('pointerdown', unlock, unlockOpts);
+		density?.removeEventListener('touchstart', unlock, unlockOpts);
 		density?.removeEventListener('input', unlock);
-		window.removeEventListener('pointerdown', unlock);
+		density?.removeEventListener('change', unlock);
+		window.removeEventListener('pointerdown', unlock, unlockOpts);
+		window.removeEventListener('touchstart', unlock, unlockOpts);
 		window.removeEventListener('keydown', unlock);
 		document.removeEventListener('visibilitychange', apply);
 		ctx.close().catch(() => {});
