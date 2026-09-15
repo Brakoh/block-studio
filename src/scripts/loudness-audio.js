@@ -21,7 +21,7 @@ const LAYERS = [
 	{ id: 'siren', src: sirenSrc, from: 0.5, to: 1, gain: 4.8 },
 ];
 
-export function initLoudnessAudio(density) {
+export function initLoudnessAudio(density, { unlock: startUnlocked = false } = {}) {
 	const AC = window.AudioContext || window.webkitAudioContext;
 	const ctx = new AC();
 	const masterGain = ctx.createGain();
@@ -101,6 +101,7 @@ export function initLoudnessAudio(density) {
 	window.addEventListener('keydown', unlock);
 	document.addEventListener('visibilitychange', apply);
 	apply();
+	if (startUnlocked) unlock();
 
 	return () => {
 		density?.removeEventListener('pointerdown', unlock, unlockOpts);

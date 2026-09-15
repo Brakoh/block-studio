@@ -32,6 +32,10 @@ _Avoid_: MEME, CAD, wireframe pulito, cyberpunk, mappa, digital twin come prodot
 I rettangoli bianchi in movimento sulle strade di LOUDNESS. La densità la imposta lo slider a sinistra.
 _Avoid_: cars, veicoli 3D, animazione macchine, punti bianchi
 
+**Cover**:
+Il primo stato di LOUDNESS: un campo nero a pieno schermo, unico strato visibile, con la riga HEADPHONES RECOMMENDED e un disegno a tratto delle cuffie. La città non è ancora aperta.
+_Avoid_: popup, modal, splash, overlay HUD, toast
+
 **WASTE**:
 Pagina del sito, aperta dal tasto omonimo sulla sfera GLOBE al posto di COMPOSER/DEPTH. Un luogo inventato, con iscrizioni, dove Rewind, Debris, Reveal e Grade sono la stessa scena.
 _Avoid_: DEPTH, COMPOSER, depth page, critica sociale, social critique page

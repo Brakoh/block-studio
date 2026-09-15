@@ -3,9 +3,16 @@ import StudioLayout from '../layouts/StudioLayout.astro';
 import '../styles/globe.css';
 import '../styles/loudness.css';
 import { copy } from '../lib/copy';
+import headphonesIcon from '../../assets/headphones-icon.svg?raw';
 ---
 
 <StudioLayout page="loudness">
+	<div class="loudness-cover" id="loudness-cover" role="status">
+		<div class="loudness-cover-lockup">
+			<div class="loudness-cover-icon" aria-hidden="true" set:html={headphonesIcon} />
+			<p class="loudness-cover-copy">{copy.loudness.headphones}</p>
+		</div>
+	</div>
 	<div class="loudness-veil" aria-hidden="true"></div>
 	<div class="loudness-left">
 		<button class="globe-return" id="globe-return">{copy.globe.return}</button>
@@ -22,20 +29,65 @@ import { copy } from '../lib/copy';
 		import { initStudioUI } from '../scripts/studio-ui.js';
 		import { withBase } from '../lib/base';
 		import { initLoudness } from '../scripts/loudness-scene.js';
+		import { initCoverMosh } from '../scripts/loudness-cover-mosh.js';
 
 		initStudioUI({ magnet: false, line: false, pinnedHitbox: '.loudness-density-track' });
+
+		const cover = document.getElementById('loudness-cover');
+		const coverMosh = initCoverMosh(cover);
+		let coverOpen = true;
+		let holdTimer = 0;
 
 		function goGlobe() {
 			location.href = withBase('globe');
 		}
+
+		function hideCover() {
+			if (!cover) return;
+			cover.classList.add('is-cut');
+			cover.hidden = true;
+			cover.setAttribute('aria-hidden', 'true');
+			coverMosh.stop();
+		}
+
+		function revealCity(gestured) {
+			if (!coverOpen) return;
+			coverOpen = false;
+			window.clearTimeout(holdTimer);
+
+			const open = (api) => {
+				api?.startIntroMosh?.();
+				coverMosh.burst(() => {
+					api?.releaseIntroMosh?.();
+					document.body.classList.add('loudness-open');
+					hideCover();
+				});
+			};
+
+			try {
+				initLoudness({
+					canvas: document.getElementById('loudness-scene'),
+					density: document.getElementById('loudness-density'),
+					unlockAudio: gestured,
+					onReady: open,
+				});
+			} catch {
+				open();
+			}
+		}
+
 		document.getElementById('globe-return')?.addEventListener('click', goGlobe);
 		document.addEventListener('keydown', (e) => {
+			if (coverOpen) {
+				if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+					e.preventDefault();
+					revealCity(true);
+				}
+				return;
+			}
 			if (e.key === 'Escape') goGlobe();
 		});
-
-		initLoudness({
-			canvas: document.getElementById('loudness-scene'),
-			density: document.getElementById('loudness-density'),
-		});
+		cover?.addEventListener('click', () => revealCity(true));
+		holdTimer = window.setTimeout(() => revealCity(false), 3000);
 	</script>
 </StudioLayout>

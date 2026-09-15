@@ -74,6 +74,7 @@ export type Copy = {
 	};
 	loudness: {
 		traffic: string;
+		headphones: string;
 	};
 	overseers: {
 		camera_unavailable: string;

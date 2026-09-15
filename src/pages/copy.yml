@@ -92,6 +92,7 @@ waste:
 
 loudness:
   traffic: TRAFFIC
+  headphones: HEADPHONES RECOMMENDED
 
 overseers:
   camera_unavailable: CAMERA UNAVAILABLE

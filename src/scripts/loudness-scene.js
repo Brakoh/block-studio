@@ -644,8 +644,8 @@ function pointMaterial(vertexShader, size) {
 	});
 }
 
-export function initLoudness({ canvas, density }) {
-	const stopAudio = initLoudnessAudio(density);
+export function initLoudness({ canvas, density, unlockAudio = false, onReady = null }) {
+	const stopAudio = initLoudnessAudio(density, { unlock: unlockAudio });
 	const mobile = window.matchMedia('(max-width: 768px)').matches;
 	const budgets = mobile
 		? { points: 560000, strokes: 52000, vehicles: 500, trails: 16, roadStep: 2.2 }
@@ -797,11 +797,40 @@ export function initLoudness({ canvas, density }) {
 		return Math.max(minLive, Math.round(minLive + t * (nVeh - minLive)));
 	}
 
-	function moshAmount() {
+	function sliderMosh() {
 		const t = sliderT();
 		if (t <= 0.5) return 0;
 		const u = (t - 0.5) / 0.5;
 		return u * u;
+	}
+
+	const INTRO_PEAK = 0.94;
+	const INTRO_DECAY_MS = 1100;
+	let introHold = false;
+	let introDecayT0 = 0;
+
+	function startIntroMosh() {
+		if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+		introHold = true;
+		introDecayT0 = 0;
+	}
+
+	function releaseIntroMosh() {
+		introHold = false;
+		introDecayT0 = performance.now();
+	}
+
+	function moshAmount() {
+		const slider = sliderMosh();
+		if (introHold) return Math.max(slider, INTRO_PEAK);
+		if (introDecayT0) {
+			const u = Math.min(1, (performance.now() - introDecayT0) / INTRO_DECAY_MS);
+			const ease = 1 - (1 - u) * (1 - u);
+			const intro = INTRO_PEAK * (1 - ease);
+			if (u >= 1) introDecayT0 = 0;
+			return Math.max(slider, intro);
+		}
+		return slider;
 	}
 
 	function paintDensity() {
@@ -907,6 +936,11 @@ export function initLoudness({ canvas, density }) {
 		stepTraffic(dt);
 		placeCamera(t);
 		mosh.render(scene, camera, moshAmount(), t);
+		if (onReady) {
+			const ready = onReady;
+			onReady = null;
+			ready({ startIntroMosh, releaseIntroMosh });
+		}
 	}
 	raf = requestAnimationFrame(frame);
 

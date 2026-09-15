@@ -13,6 +13,96 @@ body[data-page="loudness"] .watermark {
     display: none;
 }
 
+.loudness-cover {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    background: #000;
+    color: var(--fg);
+    pointer-events: auto;
+    opacity: 1;
+}
+
+.loudness-cover-lockup {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+}
+
+.loudness-cover-lockup.is-moshed {
+    opacity: 0;
+}
+
+.loudness-cover-mosh {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: none;
+}
+
+.loudness-cover.is-cut {
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+}
+
+.loudness-cover[hidden] {
+    display: none;
+}
+
+.loudness-cover-icon {
+    width: 144px;
+    height: auto;
+    color: #fff;
+}
+
+.loudness-cover-icon svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    fill: #fff;
+}
+
+.loudness-cover-icon path {
+    fill: #fff;
+}
+
+.loudness-cover-copy {
+    margin: 0;
+    font-family: 'Space Mono', monospace;
+    font-size: 1.3rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: #fff;
+}
+
+body[data-page="loudness"]:not(.loudness-open) .loudness-veil,
+body[data-page="loudness"]:not(.loudness-open) .loudness-left,
+body[data-page="loudness"]:not(.loudness-open) .side-strip,
+body[data-page="loudness"]:not(.loudness-open) .corner-coord,
+body[data-page="loudness"]:not(.loudness-open) .crosshair-coord {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .loudness-cover-lockup.is-moshed {
+        opacity: 1;
+    }
+
+    .loudness-cover-mosh {
+        display: none;
+    }
+}
+
 .loudness-veil {
     position: fixed;
     inset: 0 auto 0 0;
